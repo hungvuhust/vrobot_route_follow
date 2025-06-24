@@ -1,0 +1,14 @@
+{
+    "rdbms": "postgresql",
+    "host": "127.0.0.1",
+    "port": 5432,
+    "dbname": "vrobot",
+    "schema": "public",
+    "user": "vrobot",
+    "password": "1234",
+    "tables": [
+        "map",
+        "node",
+        "straightlink"
+    ]
+}
