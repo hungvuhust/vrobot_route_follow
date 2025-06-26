@@ -46,18 +46,18 @@ int main(int argc, char **argv) {
       node->create_publisher<nav_msgs::msg::Path>("planned_path", 10);
 
   auto client = DbClient::newPgClient(
-      "host=127.0.0.1 port=5432 dbname=vrobot user=vrobot password=1234", 1);
+      "host=127.0.0.1 port=5432 dbname=amr_01 user=amr password=1234512345", 1);
 
   if (!client) {
     LOG_ERROR << "Failed to create database client";
     return -1;
   }
 
-  Mapper<drogon_model::vrobot::Straightlink> mapperLinks(client);
-  Mapper<drogon_model::vrobot::Node>         mapperNodes(client);
+  Mapper<drogon_model::amr_01::amr_ros2::Straightlink> mapperLinks(client);
+  Mapper<drogon_model::amr_01::amr_ros2::Node>         mapperNodes(client);
 
-  std::vector<drogon_model::vrobot::Straightlink> links = mapperLinks.findAll();
-  std::vector<drogon_model::vrobot::Node>         nodes = mapperNodes.findAll();
+  std::vector<drogon_model::amr_01::amr_ros2::Straightlink> links = mapperLinks.findAll();
+  std::vector<drogon_model::amr_01::amr_ros2::Node>         nodes = mapperNodes.findAll();
 
   if (links.empty() || nodes.empty()) {
     LOG_ERROR << "No data found in the database";
@@ -77,13 +77,13 @@ int main(int argc, char **argv) {
   }
   for (const auto &link : links) {
     CPose2D start  = nodes_poses[*link.getIdStart()];
-    CPose2D stop   = nodes_poses[*link.getIdStop()];
+    CPose2D stop   = nodes_poses[*link.getIdEnd()];
     double  weight = (stop - start).norm();
-    links_poses.push_back({*link.getIdStart(), *link.getIdStop(), weight});
+    links_poses.push_back({*link.getIdStart(), *link.getIdEnd(), weight});
   }
 
   // Create graph using new organized structure
-  mrpt_graphPose_pose::GraphPose<TNodeID, CPose2D> graph(nodes_poses,
+  vrobot_route_follow::GraphPose<TNodeID, CPose2D> graph(nodes_poses,
                                                          links_poses);
 
   // Create visualization using new utilities with labels and directions
@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
             << ")" << std::endl;
 
   // Use new high-level interface
-  mrpt_graphPose_pose::GraphPose<TNodeID, CPose2D>::PlanningConfig config;
+  vrobot_route_follow::GraphPose<TNodeID, CPose2D>::PlanningConfig config;
   config.directThreshold = 0.3;
   config.maxLinkDistance = 0.5;
   config.enablePruning   = false;
@@ -153,7 +153,7 @@ int main(int argc, char **argv) {
                            std_msgs::msg::ColorRGBA>>
          coloredSegments;
     auto segmentColors =
-        mrpt_graphPose_pose::utils::Visualization<TNodeID,
+        vrobot_route_follow::utils::Visualization<TNodeID,
                                                   CPose2D>::getSegmentColors();
 
     for (size_t i = 0; i < result.pathSegments.size(); ++i) {

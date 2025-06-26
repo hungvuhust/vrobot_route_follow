@@ -6,7 +6,7 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
-namespace mrpt_graphPose_pose {
+namespace vrobot_route_follow {
 namespace utils {
 
 /**
@@ -56,4 +56,4 @@ public:
 };
 
 } // namespace utils
-} // namespace mrpt_graphPose_pose
+} // namespace vrobot_route_follow

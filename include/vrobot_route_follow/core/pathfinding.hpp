@@ -5,7 +5,7 @@
 #include <queue>
 #include <unordered_map>
 
-namespace mrpt_graphPose_pose {
+namespace vrobot_route_follow {
 namespace core {
 
 /**
@@ -82,4 +82,4 @@ protected:
 };
 
 } // namespace core
-} // namespace mrpt_graphPose_pose
+} // namespace vrobot_route_follow

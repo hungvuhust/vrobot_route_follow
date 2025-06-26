@@ -13,7 +13,7 @@
 #include "utils/nav_conversion.hpp"
 #include "utils/visualization.hpp"
 
-namespace mrpt_graphPose_pose {
+namespace vrobot_route_follow {
 
 /**
  * @brief Main GraphPose class combining all functionality
@@ -143,4 +143,4 @@ public:
 using GraphPoseInt    = GraphPose<int, CPose2D, double>;
 using GraphPoseString = GraphPose<std::string, CPose2D, double>;
 
-} // namespace mrpt_graphPose_pose
+} // namespace vrobot_route_follow

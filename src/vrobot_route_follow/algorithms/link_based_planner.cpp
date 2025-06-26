@@ -1,7 +1,7 @@
 #include "vrobot_route_follow/algorithms/link_based_planner.hpp"
 #include <limits>
 
-namespace mrpt_graphPose_pose {
+namespace vrobot_route_follow {
 namespace algorithms {
 
 // Explicit template instantiations for common types
@@ -347,4 +347,4 @@ LinkBasedPlanner<unsigned long, CPose2D, double>::buildPathThroughLink(
     const unsigned long &) const;
 
 } // namespace algorithms
-} // namespace mrpt_graphPose_pose
+} // namespace vrobot_route_follow

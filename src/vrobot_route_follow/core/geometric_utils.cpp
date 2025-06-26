@@ -1,6 +1,6 @@
 #include "vrobot_route_follow/core/geometric_utils.hpp"
 
-namespace mrpt_graphPose_pose {
+namespace vrobot_route_follow {
 namespace core {
 
 // Explicit template instantiations for common types
@@ -172,4 +172,4 @@ GeometricUtils<unsigned long, CPose2D, double>::getClosestLinks(const CPose2D &,
                                                                 double) const;
 
 } // namespace core
-} // namespace mrpt_graphPose_pose
+} // namespace vrobot_route_follow

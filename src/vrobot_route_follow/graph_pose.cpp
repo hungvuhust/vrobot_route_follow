@@ -1,7 +1,7 @@
 #include "vrobot_route_follow/graph_pose.hpp"
 #include <iostream>
 
-namespace mrpt_graphPose_pose {
+namespace vrobot_route_follow {
 
 // Explicit template instantiations for common types
 template class GraphPose<int, CPose2D, double>;
@@ -246,4 +246,4 @@ template std::pair<
 GraphPose<unsigned long, CPose2D, double>::planPathToNode(
     const CPose2D &, const unsigned long &) const;
 
-} // namespace mrpt_graphPose_pose
+} // namespace vrobot_route_follow

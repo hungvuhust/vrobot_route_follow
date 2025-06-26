@@ -11,20 +11,20 @@
 
 using namespace drogon;
 using namespace drogon::orm;
-using namespace drogon_model::vrobot;
+using namespace drogon_model::amr_01::amr_ros2;
 
 const std::string Straightlink::Cols::_id_straight_link = "\"id_straight_link\"";
 const std::string Straightlink::Cols::_id_start = "\"id_start\"";
-const std::string Straightlink::Cols::_id_stop = "\"id_stop\"";
+const std::string Straightlink::Cols::_id_end = "\"id_end\"";
 const std::string Straightlink::Cols::_map_id = "\"map_id\"";
 const std::string Straightlink::primaryKeyName = "id_straight_link";
 const bool Straightlink::hasPrimaryKey = true;
-const std::string Straightlink::tableName = "\"straightlink\"";
+const std::string Straightlink::tableName = "amr_ros2.\"straightlink\"";
 
 const std::vector<typename Straightlink::MetaData> Straightlink::metaData_={
 {"id_straight_link","int32_t","integer",4,1,1,1},
 {"id_start","int32_t","integer",4,0,0,1},
-{"id_stop","int32_t","integer",4,0,0,1},
+{"id_end","int32_t","integer",4,0,0,1},
 {"map_id","int32_t","integer",4,0,0,1}
 };
 const std::string &Straightlink::getColumnName(size_t index) noexcept(false)
@@ -44,9 +44,9 @@ Straightlink::Straightlink(const Row &r, const ssize_t indexOffset) noexcept
         {
             idStart_=std::make_shared<int32_t>(r["id_start"].as<int32_t>());
         }
-        if(!r["id_stop"].isNull())
+        if(!r["id_end"].isNull())
         {
-            idStop_=std::make_shared<int32_t>(r["id_stop"].as<int32_t>());
+            idEnd_=std::make_shared<int32_t>(r["id_end"].as<int32_t>());
         }
         if(!r["map_id"].isNull())
         {
@@ -75,7 +75,7 @@ Straightlink::Straightlink(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 2;
         if(!r[index].isNull())
         {
-            idStop_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            idEnd_=std::make_shared<int32_t>(r[index].as<int32_t>());
         }
         index = offset + 3;
         if(!r[index].isNull())
@@ -114,7 +114,7 @@ Straightlink::Straightlink(const Json::Value &pJson, const std::vector<std::stri
         dirtyFlag_[2] = true;
         if(!pJson[pMasqueradingVector[2]].isNull())
         {
-            idStop_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[2]].asInt64());
+            idEnd_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[2]].asInt64());
         }
     }
     if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
@@ -145,12 +145,12 @@ Straightlink::Straightlink(const Json::Value &pJson) noexcept(false)
             idStart_=std::make_shared<int32_t>((int32_t)pJson["id_start"].asInt64());
         }
     }
-    if(pJson.isMember("id_stop"))
+    if(pJson.isMember("id_end"))
     {
         dirtyFlag_[2]=true;
-        if(!pJson["id_stop"].isNull())
+        if(!pJson["id_end"].isNull())
         {
-            idStop_=std::make_shared<int32_t>((int32_t)pJson["id_stop"].asInt64());
+            idEnd_=std::make_shared<int32_t>((int32_t)pJson["id_end"].asInt64());
         }
     }
     if(pJson.isMember("map_id"))
@@ -191,7 +191,7 @@ void Straightlink::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[2] = true;
         if(!pJson[pMasqueradingVector[2]].isNull())
         {
-            idStop_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[2]].asInt64());
+            idEnd_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[2]].asInt64());
         }
     }
     if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
@@ -221,12 +221,12 @@ void Straightlink::updateByJson(const Json::Value &pJson) noexcept(false)
             idStart_=std::make_shared<int32_t>((int32_t)pJson["id_start"].asInt64());
         }
     }
-    if(pJson.isMember("id_stop"))
+    if(pJson.isMember("id_end"))
     {
         dirtyFlag_[2] = true;
-        if(!pJson["id_stop"].isNull())
+        if(!pJson["id_end"].isNull())
         {
-            idStop_=std::make_shared<int32_t>((int32_t)pJson["id_stop"].asInt64());
+            idEnd_=std::make_shared<int32_t>((int32_t)pJson["id_end"].asInt64());
         }
     }
     if(pJson.isMember("map_id"))
@@ -278,20 +278,20 @@ void Straightlink::setIdStart(const int32_t &pIdStart) noexcept
     dirtyFlag_[1] = true;
 }
 
-const int32_t &Straightlink::getValueOfIdStop() const noexcept
+const int32_t &Straightlink::getValueOfIdEnd() const noexcept
 {
     static const int32_t defaultValue = int32_t();
-    if(idStop_)
-        return *idStop_;
+    if(idEnd_)
+        return *idEnd_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &Straightlink::getIdStop() const noexcept
+const std::shared_ptr<int32_t> &Straightlink::getIdEnd() const noexcept
 {
-    return idStop_;
+    return idEnd_;
 }
-void Straightlink::setIdStop(const int32_t &pIdStop) noexcept
+void Straightlink::setIdEnd(const int32_t &pIdEnd) noexcept
 {
-    idStop_ = std::make_shared<int32_t>(pIdStop);
+    idEnd_ = std::make_shared<int32_t>(pIdEnd);
     dirtyFlag_[2] = true;
 }
 
@@ -320,7 +320,7 @@ const std::vector<std::string> &Straightlink::insertColumns() noexcept
 {
     static const std::vector<std::string> inCols={
         "id_start",
-        "id_stop",
+        "id_end",
         "map_id"
     };
     return inCols;
@@ -341,9 +341,9 @@ void Straightlink::outputArgs(drogon::orm::internal::SqlBinder &binder) const
     }
     if(dirtyFlag_[2])
     {
-        if(getIdStop())
+        if(getIdEnd())
         {
-            binder << getValueOfIdStop();
+            binder << getValueOfIdEnd();
         }
         else
         {
@@ -396,9 +396,9 @@ void Straightlink::updateArgs(drogon::orm::internal::SqlBinder &binder) const
     }
     if(dirtyFlag_[2])
     {
-        if(getIdStop())
+        if(getIdEnd())
         {
-            binder << getValueOfIdStop();
+            binder << getValueOfIdEnd();
         }
         else
         {
@@ -436,13 +436,13 @@ Json::Value Straightlink::toJson() const
     {
         ret["id_start"]=Json::Value();
     }
-    if(getIdStop())
+    if(getIdEnd())
     {
-        ret["id_stop"]=getValueOfIdStop();
+        ret["id_end"]=getValueOfIdEnd();
     }
     else
     {
-        ret["id_stop"]=Json::Value();
+        ret["id_end"]=Json::Value();
     }
     if(getMapId())
     {
@@ -485,9 +485,9 @@ Json::Value Straightlink::toMasqueradedJson(
         }
         if(!pMasqueradingVector[2].empty())
         {
-            if(getIdStop())
+            if(getIdEnd())
             {
-                ret[pMasqueradingVector[2]]=getValueOfIdStop();
+                ret[pMasqueradingVector[2]]=getValueOfIdEnd();
             }
             else
             {
@@ -524,13 +524,13 @@ Json::Value Straightlink::toMasqueradedJson(
     {
         ret["id_start"]=Json::Value();
     }
-    if(getIdStop())
+    if(getIdEnd())
     {
-        ret["id_stop"]=getValueOfIdStop();
+        ret["id_end"]=getValueOfIdEnd();
     }
     else
     {
-        ret["id_stop"]=Json::Value();
+        ret["id_end"]=Json::Value();
     }
     if(getMapId())
     {
@@ -560,14 +560,14 @@ bool Straightlink::validateJsonForCreation(const Json::Value &pJson, std::string
         err="The id_start column cannot be null";
         return false;
     }
-    if(pJson.isMember("id_stop"))
+    if(pJson.isMember("id_end"))
     {
-        if(!validJsonOfField(2, "id_stop", pJson["id_stop"], err, true))
+        if(!validJsonOfField(2, "id_end", pJson["id_end"], err, true))
             return false;
     }
     else
     {
-        err="The id_stop column cannot be null";
+        err="The id_end column cannot be null";
         return false;
     }
     if(pJson.isMember("map_id"))
@@ -664,9 +664,9 @@ bool Straightlink::validateJsonForUpdate(const Json::Value &pJson, std::string &
         if(!validJsonOfField(1, "id_start", pJson["id_start"], err, false))
             return false;
     }
-    if(pJson.isMember("id_stop"))
+    if(pJson.isMember("id_end"))
     {
-        if(!validJsonOfField(2, "id_stop", pJson["id_stop"], err, false))
+        if(!validJsonOfField(2, "id_end", pJson["id_end"], err, false))
             return false;
     }
     if(pJson.isMember("map_id"))

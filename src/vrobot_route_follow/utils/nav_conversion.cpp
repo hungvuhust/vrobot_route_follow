@@ -1,6 +1,6 @@
 #include "vrobot_route_follow/utils/nav_conversion.hpp"
 
-namespace mrpt_graphPose_pose {
+namespace vrobot_route_follow {
 namespace utils {
 
 // Explicit template instantiations for common types
@@ -111,4 +111,4 @@ NavConversion<unsigned long, CPose2D, double>::toNavPath(
     double) const;
 
 } // namespace utils
-} // namespace mrpt_graphPose_pose
+} // namespace vrobot_route_follow

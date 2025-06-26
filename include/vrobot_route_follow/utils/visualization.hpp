@@ -9,7 +9,7 @@
 #include <visualization_msgs/msg/marker.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
-namespace mrpt_graphPose_pose {
+namespace vrobot_route_follow {
 namespace utils {
 
 /**
@@ -125,4 +125,4 @@ public:
 };
 
 } // namespace utils
-} // namespace mrpt_graphPose_pose
+} // namespace vrobot_route_follow

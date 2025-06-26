@@ -36,7 +36,9 @@ using DbClientPtr = std::shared_ptr<DbClient>;
 }
 namespace drogon_model
 {
-namespace vrobot
+namespace amr_01
+{
+namespace amr_ros2
 {
 
 class Node
@@ -45,6 +47,7 @@ class Node
     struct Cols
     {
         static const std::string _id;
+        static const std::string _node_name;
         static const std::string _x;
         static const std::string _y;
         static const std::string _theta;
@@ -109,6 +112,15 @@ class Node
     ///Set the value of the column id
     void setId(const int32_t &pId) noexcept;
 
+    /**  For column node_name  */
+    ///Get the value of the column node_name, returns the default value if the column is null
+    const std::string &getValueOfNodeName() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getNodeName() const noexcept;
+    ///Set the value of the column node_name
+    void setNodeName(const std::string &pNodeName) noexcept;
+    void setNodeName(std::string &&pNodeName) noexcept;
+
     /**  For column x  */
     ///Get the value of the column x, returns the default value if the column is null
     const float &getValueOfX() const noexcept;
@@ -151,7 +163,7 @@ class Node
     void setMapId(const int32_t &pMapId) noexcept;
 
 
-    static size_t getColumnNumber() noexcept {  return 6;  }
+    static size_t getColumnNumber() noexcept {  return 7;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -173,6 +185,7 @@ class Node
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
     std::shared_ptr<int32_t> id_;
+    std::shared_ptr<std::string> nodeName_;
     std::shared_ptr<float> x_;
     std::shared_ptr<float> y_;
     std::shared_ptr<float> theta_;
@@ -189,7 +202,7 @@ class Node
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[6]={ false };
+    bool dirtyFlag_[7]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -211,25 +224,30 @@ class Node
             ++parametersCount;
         if(dirtyFlag_[1])
         {
-            sql += "x,";
+            sql += "node_name,";
             ++parametersCount;
         }
         if(dirtyFlag_[2])
         {
-            sql += "y,";
+            sql += "x,";
             ++parametersCount;
         }
         if(dirtyFlag_[3])
         {
-            sql += "theta,";
+            sql += "y,";
             ++parametersCount;
         }
         if(dirtyFlag_[4])
         {
-            sql += "type,";
+            sql += "theta,";
             ++parametersCount;
         }
         if(dirtyFlag_[5])
+        {
+            sql += "type,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[6])
         {
             sql += "map_id,";
             ++parametersCount;
@@ -272,6 +290,11 @@ class Node
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
         }
+        if(dirtyFlag_[6])
+        {
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
         if(parametersCount > 0)
         {
             sql.resize(sql.length() - 1);
@@ -288,5 +311,6 @@ class Node
         return sql;
     }
 };
-} // namespace vrobot
+} // namespace amr_ros2
+} // namespace amr_01
 } // namespace drogon_model

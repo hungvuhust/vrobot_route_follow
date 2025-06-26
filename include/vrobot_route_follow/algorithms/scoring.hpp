@@ -2,7 +2,7 @@
 
 #include "../core/graph_base.hpp"
 
-namespace mrpt_graphPose_pose {
+namespace vrobot_route_follow {
 namespace algorithms {
 
 /**
@@ -126,4 +126,4 @@ public:
 };
 
 } // namespace algorithms
-} // namespace mrpt_graphPose_pose
+} // namespace vrobot_route_follow

@@ -11,21 +11,27 @@
 
 using namespace drogon;
 using namespace drogon::orm;
-using namespace drogon_model::vrobot;
+using namespace drogon_model::amr_01::amr_ros2;
 
 const std::string Map::Cols::_id_map = "\"id_map\"";
 const std::string Map::Cols::_map_name = "\"map_name\"";
+const std::string Map::Cols::_width = "\"width\"";
+const std::string Map::Cols::_height = "\"height\"";
+const std::string Map::Cols::_resolution = "\"resolution\"";
 const std::string Map::Cols::_x = "\"x\"";
 const std::string Map::Cols::_y = "\"y\"";
 const std::string Map::Cols::_theta = "\"theta\"";
 const std::string Map::Cols::_image = "\"image\"";
 const std::string Map::primaryKeyName = "id_map";
 const bool Map::hasPrimaryKey = true;
-const std::string Map::tableName = "\"map\"";
+const std::string Map::tableName = "amr_ros2.\"map\"";
 
 const std::vector<typename Map::MetaData> Map::metaData_={
 {"id_map","int32_t","integer",4,1,1,1},
 {"map_name","std::string","text",0,0,0,1},
+{"width","int32_t","integer",4,0,0,1},
+{"height","int32_t","integer",4,0,0,1},
+{"resolution","float","real",4,0,0,1},
 {"x","float","real",4,0,0,1},
 {"y","float","real",4,0,0,1},
 {"theta","float","real",4,0,0,1},
@@ -48,6 +54,18 @@ Map::Map(const Row &r, const ssize_t indexOffset) noexcept
         {
             mapName_=std::make_shared<std::string>(r["map_name"].as<std::string>());
         }
+        if(!r["width"].isNull())
+        {
+            width_=std::make_shared<int32_t>(r["width"].as<int32_t>());
+        }
+        if(!r["height"].isNull())
+        {
+            height_=std::make_shared<int32_t>(r["height"].as<int32_t>());
+        }
+        if(!r["resolution"].isNull())
+        {
+            resolution_=std::make_shared<float>(r["resolution"].as<float>());
+        }
         if(!r["x"].isNull())
         {
             x_=std::make_shared<float>(r["x"].as<float>());
@@ -68,7 +86,7 @@ Map::Map(const Row &r, const ssize_t indexOffset) noexcept
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 6 > r.size())
+        if(offset + 9 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -87,19 +105,34 @@ Map::Map(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 2;
         if(!r[index].isNull())
         {
-            x_=std::make_shared<float>(r[index].as<float>());
+            width_=std::make_shared<int32_t>(r[index].as<int32_t>());
         }
         index = offset + 3;
         if(!r[index].isNull())
         {
-            y_=std::make_shared<float>(r[index].as<float>());
+            height_=std::make_shared<int32_t>(r[index].as<int32_t>());
         }
         index = offset + 4;
         if(!r[index].isNull())
         {
-            theta_=std::make_shared<float>(r[index].as<float>());
+            resolution_=std::make_shared<float>(r[index].as<float>());
         }
         index = offset + 5;
+        if(!r[index].isNull())
+        {
+            x_=std::make_shared<float>(r[index].as<float>());
+        }
+        index = offset + 6;
+        if(!r[index].isNull())
+        {
+            y_=std::make_shared<float>(r[index].as<float>());
+        }
+        index = offset + 7;
+        if(!r[index].isNull())
+        {
+            theta_=std::make_shared<float>(r[index].as<float>());
+        }
+        index = offset + 8;
         if(!r[index].isNull())
         {
             image_=std::make_shared<std::string>(r[index].as<std::string>());
@@ -110,7 +143,7 @@ Map::Map(const Row &r, const ssize_t indexOffset) noexcept
 
 Map::Map(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 6)
+    if(pMasqueradingVector.size() != 9)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -136,23 +169,23 @@ Map::Map(const Json::Value &pJson, const std::vector<std::string> &pMasquerading
         dirtyFlag_[2] = true;
         if(!pJson[pMasqueradingVector[2]].isNull())
         {
-            x_=std::make_shared<float>(pJson[pMasqueradingVector[2]].asFloat());
+            width_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[2]].asInt64());
         }
-     }
+    }
     if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
     {
         dirtyFlag_[3] = true;
         if(!pJson[pMasqueradingVector[3]].isNull())
         {
-            y_=std::make_shared<float>(pJson[pMasqueradingVector[3]].asFloat());
+            height_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[3]].asInt64());
         }
-     }
+    }
     if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
     {
         dirtyFlag_[4] = true;
         if(!pJson[pMasqueradingVector[4]].isNull())
         {
-            theta_=std::make_shared<float>(pJson[pMasqueradingVector[4]].asFloat());
+            resolution_=std::make_shared<float>(pJson[pMasqueradingVector[4]].asFloat());
         }
      }
     if(!pMasqueradingVector[5].empty() && pJson.isMember(pMasqueradingVector[5]))
@@ -160,7 +193,31 @@ Map::Map(const Json::Value &pJson, const std::vector<std::string> &pMasquerading
         dirtyFlag_[5] = true;
         if(!pJson[pMasqueradingVector[5]].isNull())
         {
-            image_=std::make_shared<std::string>(pJson[pMasqueradingVector[5]].asString());
+            x_=std::make_shared<float>(pJson[pMasqueradingVector[5]].asFloat());
+        }
+     }
+    if(!pMasqueradingVector[6].empty() && pJson.isMember(pMasqueradingVector[6]))
+    {
+        dirtyFlag_[6] = true;
+        if(!pJson[pMasqueradingVector[6]].isNull())
+        {
+            y_=std::make_shared<float>(pJson[pMasqueradingVector[6]].asFloat());
+        }
+     }
+    if(!pMasqueradingVector[7].empty() && pJson.isMember(pMasqueradingVector[7]))
+    {
+        dirtyFlag_[7] = true;
+        if(!pJson[pMasqueradingVector[7]].isNull())
+        {
+            theta_=std::make_shared<float>(pJson[pMasqueradingVector[7]].asFloat());
+        }
+     }
+    if(!pMasqueradingVector[8].empty() && pJson.isMember(pMasqueradingVector[8]))
+    {
+        dirtyFlag_[8] = true;
+        if(!pJson[pMasqueradingVector[8]].isNull())
+        {
+            image_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
         }
     }
 }
@@ -183,9 +240,33 @@ Map::Map(const Json::Value &pJson) noexcept(false)
             mapName_=std::make_shared<std::string>(pJson["map_name"].asString());
         }
     }
-    if(pJson.isMember("x"))
+    if(pJson.isMember("width"))
     {
         dirtyFlag_[2]=true;
+        if(!pJson["width"].isNull())
+        {
+            width_=std::make_shared<int32_t>((int32_t)pJson["width"].asInt64());
+        }
+    }
+    if(pJson.isMember("height"))
+    {
+        dirtyFlag_[3]=true;
+        if(!pJson["height"].isNull())
+        {
+            height_=std::make_shared<int32_t>((int32_t)pJson["height"].asInt64());
+        }
+    }
+    if(pJson.isMember("resolution"))
+    {
+        dirtyFlag_[4]=true;
+        if(!pJson["resolution"].isNull())
+        {
+            resolution_=std::make_shared<float>(pJson["resolution"].asFloat());
+        }
+     }
+    if(pJson.isMember("x"))
+    {
+        dirtyFlag_[5]=true;
         if(!pJson["x"].isNull())
         {
             x_=std::make_shared<float>(pJson["x"].asFloat());
@@ -193,7 +274,7 @@ Map::Map(const Json::Value &pJson) noexcept(false)
      }
     if(pJson.isMember("y"))
     {
-        dirtyFlag_[3]=true;
+        dirtyFlag_[6]=true;
         if(!pJson["y"].isNull())
         {
             y_=std::make_shared<float>(pJson["y"].asFloat());
@@ -201,7 +282,7 @@ Map::Map(const Json::Value &pJson) noexcept(false)
      }
     if(pJson.isMember("theta"))
     {
-        dirtyFlag_[4]=true;
+        dirtyFlag_[7]=true;
         if(!pJson["theta"].isNull())
         {
             theta_=std::make_shared<float>(pJson["theta"].asFloat());
@@ -209,7 +290,7 @@ Map::Map(const Json::Value &pJson) noexcept(false)
      }
     if(pJson.isMember("image"))
     {
-        dirtyFlag_[5]=true;
+        dirtyFlag_[8]=true;
         if(!pJson["image"].isNull())
         {
             image_=std::make_shared<std::string>(pJson["image"].asString());
@@ -220,7 +301,7 @@ Map::Map(const Json::Value &pJson) noexcept(false)
 void Map::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 6)
+    if(pMasqueradingVector.size() != 9)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -245,7 +326,7 @@ void Map::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[2] = true;
         if(!pJson[pMasqueradingVector[2]].isNull())
         {
-            x_=std::make_shared<float>(pJson[pMasqueradingVector[2]].asFloat());
+            width_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[2]].asInt64());
         }
     }
     if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
@@ -253,7 +334,7 @@ void Map::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[3] = true;
         if(!pJson[pMasqueradingVector[3]].isNull())
         {
-            y_=std::make_shared<float>(pJson[pMasqueradingVector[3]].asFloat());
+            height_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[3]].asInt64());
         }
     }
     if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
@@ -261,7 +342,7 @@ void Map::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[4] = true;
         if(!pJson[pMasqueradingVector[4]].isNull())
         {
-            theta_=std::make_shared<float>(pJson[pMasqueradingVector[4]].asFloat());
+            resolution_=std::make_shared<float>(pJson[pMasqueradingVector[4]].asFloat());
         }
     }
     if(!pMasqueradingVector[5].empty() && pJson.isMember(pMasqueradingVector[5]))
@@ -269,7 +350,31 @@ void Map::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[5] = true;
         if(!pJson[pMasqueradingVector[5]].isNull())
         {
-            image_=std::make_shared<std::string>(pJson[pMasqueradingVector[5]].asString());
+            x_=std::make_shared<float>(pJson[pMasqueradingVector[5]].asFloat());
+        }
+    }
+    if(!pMasqueradingVector[6].empty() && pJson.isMember(pMasqueradingVector[6]))
+    {
+        dirtyFlag_[6] = true;
+        if(!pJson[pMasqueradingVector[6]].isNull())
+        {
+            y_=std::make_shared<float>(pJson[pMasqueradingVector[6]].asFloat());
+        }
+    }
+    if(!pMasqueradingVector[7].empty() && pJson.isMember(pMasqueradingVector[7]))
+    {
+        dirtyFlag_[7] = true;
+        if(!pJson[pMasqueradingVector[7]].isNull())
+        {
+            theta_=std::make_shared<float>(pJson[pMasqueradingVector[7]].asFloat());
+        }
+    }
+    if(!pMasqueradingVector[8].empty() && pJson.isMember(pMasqueradingVector[8]))
+    {
+        dirtyFlag_[8] = true;
+        if(!pJson[pMasqueradingVector[8]].isNull())
+        {
+            image_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
         }
     }
 }
@@ -291,9 +396,33 @@ void Map::updateByJson(const Json::Value &pJson) noexcept(false)
             mapName_=std::make_shared<std::string>(pJson["map_name"].asString());
         }
     }
-    if(pJson.isMember("x"))
+    if(pJson.isMember("width"))
     {
         dirtyFlag_[2] = true;
+        if(!pJson["width"].isNull())
+        {
+            width_=std::make_shared<int32_t>((int32_t)pJson["width"].asInt64());
+        }
+    }
+    if(pJson.isMember("height"))
+    {
+        dirtyFlag_[3] = true;
+        if(!pJson["height"].isNull())
+        {
+            height_=std::make_shared<int32_t>((int32_t)pJson["height"].asInt64());
+        }
+    }
+    if(pJson.isMember("resolution"))
+    {
+        dirtyFlag_[4] = true;
+        if(!pJson["resolution"].isNull())
+        {
+            resolution_=std::make_shared<float>(pJson["resolution"].asFloat());
+        }
+    }
+    if(pJson.isMember("x"))
+    {
+        dirtyFlag_[5] = true;
         if(!pJson["x"].isNull())
         {
             x_=std::make_shared<float>(pJson["x"].asFloat());
@@ -301,7 +430,7 @@ void Map::updateByJson(const Json::Value &pJson) noexcept(false)
     }
     if(pJson.isMember("y"))
     {
-        dirtyFlag_[3] = true;
+        dirtyFlag_[6] = true;
         if(!pJson["y"].isNull())
         {
             y_=std::make_shared<float>(pJson["y"].asFloat());
@@ -309,7 +438,7 @@ void Map::updateByJson(const Json::Value &pJson) noexcept(false)
     }
     if(pJson.isMember("theta"))
     {
-        dirtyFlag_[4] = true;
+        dirtyFlag_[7] = true;
         if(!pJson["theta"].isNull())
         {
             theta_=std::make_shared<float>(pJson["theta"].asFloat());
@@ -317,7 +446,7 @@ void Map::updateByJson(const Json::Value &pJson) noexcept(false)
     }
     if(pJson.isMember("image"))
     {
-        dirtyFlag_[5] = true;
+        dirtyFlag_[8] = true;
         if(!pJson["image"].isNull())
         {
             image_=std::make_shared<std::string>(pJson["image"].asString());
@@ -369,6 +498,57 @@ void Map::setMapName(std::string &&pMapName) noexcept
     dirtyFlag_[1] = true;
 }
 
+const int32_t &Map::getValueOfWidth() const noexcept
+{
+    static const int32_t defaultValue = int32_t();
+    if(width_)
+        return *width_;
+    return defaultValue;
+}
+const std::shared_ptr<int32_t> &Map::getWidth() const noexcept
+{
+    return width_;
+}
+void Map::setWidth(const int32_t &pWidth) noexcept
+{
+    width_ = std::make_shared<int32_t>(pWidth);
+    dirtyFlag_[2] = true;
+}
+
+const int32_t &Map::getValueOfHeight() const noexcept
+{
+    static const int32_t defaultValue = int32_t();
+    if(height_)
+        return *height_;
+    return defaultValue;
+}
+const std::shared_ptr<int32_t> &Map::getHeight() const noexcept
+{
+    return height_;
+}
+void Map::setHeight(const int32_t &pHeight) noexcept
+{
+    height_ = std::make_shared<int32_t>(pHeight);
+    dirtyFlag_[3] = true;
+}
+
+const float &Map::getValueOfResolution() const noexcept
+{
+    static const float defaultValue = float();
+    if(resolution_)
+        return *resolution_;
+    return defaultValue;
+}
+const std::shared_ptr<float> &Map::getResolution() const noexcept
+{
+    return resolution_;
+}
+void Map::setResolution(const float &pResolution) noexcept
+{
+    resolution_ = std::make_shared<float>(pResolution);
+    dirtyFlag_[4] = true;
+}
+
 const float &Map::getValueOfX() const noexcept
 {
     static const float defaultValue = float();
@@ -383,7 +563,7 @@ const std::shared_ptr<float> &Map::getX() const noexcept
 void Map::setX(const float &pX) noexcept
 {
     x_ = std::make_shared<float>(pX);
-    dirtyFlag_[2] = true;
+    dirtyFlag_[5] = true;
 }
 
 const float &Map::getValueOfY() const noexcept
@@ -400,7 +580,7 @@ const std::shared_ptr<float> &Map::getY() const noexcept
 void Map::setY(const float &pY) noexcept
 {
     y_ = std::make_shared<float>(pY);
-    dirtyFlag_[3] = true;
+    dirtyFlag_[6] = true;
 }
 
 const float &Map::getValueOfTheta() const noexcept
@@ -417,7 +597,7 @@ const std::shared_ptr<float> &Map::getTheta() const noexcept
 void Map::setTheta(const float &pTheta) noexcept
 {
     theta_ = std::make_shared<float>(pTheta);
-    dirtyFlag_[4] = true;
+    dirtyFlag_[7] = true;
 }
 
 const std::string &Map::getValueOfImage() const noexcept
@@ -434,12 +614,12 @@ const std::shared_ptr<std::string> &Map::getImage() const noexcept
 void Map::setImage(const std::string &pImage) noexcept
 {
     image_ = std::make_shared<std::string>(pImage);
-    dirtyFlag_[5] = true;
+    dirtyFlag_[8] = true;
 }
 void Map::setImage(std::string &&pImage) noexcept
 {
     image_ = std::make_shared<std::string>(std::move(pImage));
-    dirtyFlag_[5] = true;
+    dirtyFlag_[8] = true;
 }
 
 void Map::updateId(const uint64_t id)
@@ -450,6 +630,9 @@ const std::vector<std::string> &Map::insertColumns() noexcept
 {
     static const std::vector<std::string> inCols={
         "map_name",
+        "width",
+        "height",
+        "resolution",
         "x",
         "y",
         "theta",
@@ -473,6 +656,39 @@ void Map::outputArgs(drogon::orm::internal::SqlBinder &binder) const
     }
     if(dirtyFlag_[2])
     {
+        if(getWidth())
+        {
+            binder << getValueOfWidth();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[3])
+    {
+        if(getHeight())
+        {
+            binder << getValueOfHeight();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[4])
+    {
+        if(getResolution())
+        {
+            binder << getValueOfResolution();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[5])
+    {
         if(getX())
         {
             binder << getValueOfX();
@@ -482,7 +698,7 @@ void Map::outputArgs(drogon::orm::internal::SqlBinder &binder) const
             binder << nullptr;
         }
     }
-    if(dirtyFlag_[3])
+    if(dirtyFlag_[6])
     {
         if(getY())
         {
@@ -493,7 +709,7 @@ void Map::outputArgs(drogon::orm::internal::SqlBinder &binder) const
             binder << nullptr;
         }
     }
-    if(dirtyFlag_[4])
+    if(dirtyFlag_[7])
     {
         if(getTheta())
         {
@@ -504,7 +720,7 @@ void Map::outputArgs(drogon::orm::internal::SqlBinder &binder) const
             binder << nullptr;
         }
     }
-    if(dirtyFlag_[5])
+    if(dirtyFlag_[8])
     {
         if(getImage())
         {
@@ -540,6 +756,18 @@ const std::vector<std::string> Map::updateColumns() const
     {
         ret.push_back(getColumnName(5));
     }
+    if(dirtyFlag_[6])
+    {
+        ret.push_back(getColumnName(6));
+    }
+    if(dirtyFlag_[7])
+    {
+        ret.push_back(getColumnName(7));
+    }
+    if(dirtyFlag_[8])
+    {
+        ret.push_back(getColumnName(8));
+    }
     return ret;
 }
 
@@ -558,6 +786,39 @@ void Map::updateArgs(drogon::orm::internal::SqlBinder &binder) const
     }
     if(dirtyFlag_[2])
     {
+        if(getWidth())
+        {
+            binder << getValueOfWidth();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[3])
+    {
+        if(getHeight())
+        {
+            binder << getValueOfHeight();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[4])
+    {
+        if(getResolution())
+        {
+            binder << getValueOfResolution();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[5])
+    {
         if(getX())
         {
             binder << getValueOfX();
@@ -567,7 +828,7 @@ void Map::updateArgs(drogon::orm::internal::SqlBinder &binder) const
             binder << nullptr;
         }
     }
-    if(dirtyFlag_[3])
+    if(dirtyFlag_[6])
     {
         if(getY())
         {
@@ -578,7 +839,7 @@ void Map::updateArgs(drogon::orm::internal::SqlBinder &binder) const
             binder << nullptr;
         }
     }
-    if(dirtyFlag_[4])
+    if(dirtyFlag_[7])
     {
         if(getTheta())
         {
@@ -589,7 +850,7 @@ void Map::updateArgs(drogon::orm::internal::SqlBinder &binder) const
             binder << nullptr;
         }
     }
-    if(dirtyFlag_[5])
+    if(dirtyFlag_[8])
     {
         if(getImage())
         {
@@ -619,6 +880,30 @@ Json::Value Map::toJson() const
     else
     {
         ret["map_name"]=Json::Value();
+    }
+    if(getWidth())
+    {
+        ret["width"]=getValueOfWidth();
+    }
+    else
+    {
+        ret["width"]=Json::Value();
+    }
+    if(getHeight())
+    {
+        ret["height"]=getValueOfHeight();
+    }
+    else
+    {
+        ret["height"]=Json::Value();
+    }
+    if(getResolution())
+    {
+        ret["resolution"]=getValueOfResolution();
+    }
+    else
+    {
+        ret["resolution"]=Json::Value();
     }
     if(getX())
     {
@@ -659,7 +944,7 @@ Json::Value Map::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 6)
+    if(pMasqueradingVector.size() == 9)
     {
         if(!pMasqueradingVector[0].empty())
         {
@@ -685,9 +970,9 @@ Json::Value Map::toMasqueradedJson(
         }
         if(!pMasqueradingVector[2].empty())
         {
-            if(getX())
+            if(getWidth())
             {
-                ret[pMasqueradingVector[2]]=getValueOfX();
+                ret[pMasqueradingVector[2]]=getValueOfWidth();
             }
             else
             {
@@ -696,9 +981,9 @@ Json::Value Map::toMasqueradedJson(
         }
         if(!pMasqueradingVector[3].empty())
         {
-            if(getY())
+            if(getHeight())
             {
-                ret[pMasqueradingVector[3]]=getValueOfY();
+                ret[pMasqueradingVector[3]]=getValueOfHeight();
             }
             else
             {
@@ -707,9 +992,9 @@ Json::Value Map::toMasqueradedJson(
         }
         if(!pMasqueradingVector[4].empty())
         {
-            if(getTheta())
+            if(getResolution())
             {
-                ret[pMasqueradingVector[4]]=getValueOfTheta();
+                ret[pMasqueradingVector[4]]=getValueOfResolution();
             }
             else
             {
@@ -718,13 +1003,46 @@ Json::Value Map::toMasqueradedJson(
         }
         if(!pMasqueradingVector[5].empty())
         {
-            if(getImage())
+            if(getX())
             {
-                ret[pMasqueradingVector[5]]=getValueOfImage();
+                ret[pMasqueradingVector[5]]=getValueOfX();
             }
             else
             {
                 ret[pMasqueradingVector[5]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[6].empty())
+        {
+            if(getY())
+            {
+                ret[pMasqueradingVector[6]]=getValueOfY();
+            }
+            else
+            {
+                ret[pMasqueradingVector[6]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[7].empty())
+        {
+            if(getTheta())
+            {
+                ret[pMasqueradingVector[7]]=getValueOfTheta();
+            }
+            else
+            {
+                ret[pMasqueradingVector[7]]=Json::Value();
+            }
+        }
+        if(!pMasqueradingVector[8].empty())
+        {
+            if(getImage())
+            {
+                ret[pMasqueradingVector[8]]=getValueOfImage();
+            }
+            else
+            {
+                ret[pMasqueradingVector[8]]=Json::Value();
             }
         }
         return ret;
@@ -745,6 +1063,30 @@ Json::Value Map::toMasqueradedJson(
     else
     {
         ret["map_name"]=Json::Value();
+    }
+    if(getWidth())
+    {
+        ret["width"]=getValueOfWidth();
+    }
+    else
+    {
+        ret["width"]=Json::Value();
+    }
+    if(getHeight())
+    {
+        ret["height"]=getValueOfHeight();
+    }
+    else
+    {
+        ret["height"]=Json::Value();
+    }
+    if(getResolution())
+    {
+        ret["resolution"]=getValueOfResolution();
+    }
+    else
+    {
+        ret["resolution"]=Json::Value();
     }
     if(getX())
     {
@@ -798,9 +1140,39 @@ bool Map::validateJsonForCreation(const Json::Value &pJson, std::string &err)
         err="The map_name column cannot be null";
         return false;
     }
+    if(pJson.isMember("width"))
+    {
+        if(!validJsonOfField(2, "width", pJson["width"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The width column cannot be null";
+        return false;
+    }
+    if(pJson.isMember("height"))
+    {
+        if(!validJsonOfField(3, "height", pJson["height"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The height column cannot be null";
+        return false;
+    }
+    if(pJson.isMember("resolution"))
+    {
+        if(!validJsonOfField(4, "resolution", pJson["resolution"], err, true))
+            return false;
+    }
+    else
+    {
+        err="The resolution column cannot be null";
+        return false;
+    }
     if(pJson.isMember("x"))
     {
-        if(!validJsonOfField(2, "x", pJson["x"], err, true))
+        if(!validJsonOfField(5, "x", pJson["x"], err, true))
             return false;
     }
     else
@@ -810,7 +1182,7 @@ bool Map::validateJsonForCreation(const Json::Value &pJson, std::string &err)
     }
     if(pJson.isMember("y"))
     {
-        if(!validJsonOfField(3, "y", pJson["y"], err, true))
+        if(!validJsonOfField(6, "y", pJson["y"], err, true))
             return false;
     }
     else
@@ -820,7 +1192,7 @@ bool Map::validateJsonForCreation(const Json::Value &pJson, std::string &err)
     }
     if(pJson.isMember("theta"))
     {
-        if(!validJsonOfField(4, "theta", pJson["theta"], err, true))
+        if(!validJsonOfField(7, "theta", pJson["theta"], err, true))
             return false;
     }
     else
@@ -830,7 +1202,7 @@ bool Map::validateJsonForCreation(const Json::Value &pJson, std::string &err)
     }
     if(pJson.isMember("image"))
     {
-        if(!validJsonOfField(5, "image", pJson["image"], err, true))
+        if(!validJsonOfField(8, "image", pJson["image"], err, true))
             return false;
     }
     else
@@ -844,7 +1216,7 @@ bool Map::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                              const std::vector<std::string> &pMasqueradingVector,
                                              std::string &err)
 {
-    if(pMasqueradingVector.size() != 6)
+    if(pMasqueradingVector.size() != 9)
     {
         err = "Bad masquerading vector";
         return false;
@@ -923,6 +1295,45 @@ bool Map::validateMasqueradedJsonForCreation(const Json::Value &pJson,
             return false;
         }
       }
+      if(!pMasqueradingVector[6].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[6]))
+          {
+              if(!validJsonOfField(6, pMasqueradingVector[6], pJson[pMasqueradingVector[6]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[6] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[7].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[7]))
+          {
+              if(!validJsonOfField(7, pMasqueradingVector[7], pJson[pMasqueradingVector[7]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[7] + " column cannot be null";
+            return false;
+        }
+      }
+      if(!pMasqueradingVector[8].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[8]))
+          {
+              if(!validJsonOfField(8, pMasqueradingVector[8], pJson[pMasqueradingVector[8]], err, true))
+                  return false;
+          }
+        else
+        {
+            err="The " + pMasqueradingVector[8] + " column cannot be null";
+            return false;
+        }
+      }
     }
     catch(const Json::LogicError &e)
     {
@@ -948,24 +1359,39 @@ bool Map::validateJsonForUpdate(const Json::Value &pJson, std::string &err)
         if(!validJsonOfField(1, "map_name", pJson["map_name"], err, false))
             return false;
     }
+    if(pJson.isMember("width"))
+    {
+        if(!validJsonOfField(2, "width", pJson["width"], err, false))
+            return false;
+    }
+    if(pJson.isMember("height"))
+    {
+        if(!validJsonOfField(3, "height", pJson["height"], err, false))
+            return false;
+    }
+    if(pJson.isMember("resolution"))
+    {
+        if(!validJsonOfField(4, "resolution", pJson["resolution"], err, false))
+            return false;
+    }
     if(pJson.isMember("x"))
     {
-        if(!validJsonOfField(2, "x", pJson["x"], err, false))
+        if(!validJsonOfField(5, "x", pJson["x"], err, false))
             return false;
     }
     if(pJson.isMember("y"))
     {
-        if(!validJsonOfField(3, "y", pJson["y"], err, false))
+        if(!validJsonOfField(6, "y", pJson["y"], err, false))
             return false;
     }
     if(pJson.isMember("theta"))
     {
-        if(!validJsonOfField(4, "theta", pJson["theta"], err, false))
+        if(!validJsonOfField(7, "theta", pJson["theta"], err, false))
             return false;
     }
     if(pJson.isMember("image"))
     {
-        if(!validJsonOfField(5, "image", pJson["image"], err, false))
+        if(!validJsonOfField(8, "image", pJson["image"], err, false))
             return false;
     }
     return true;
@@ -974,7 +1400,7 @@ bool Map::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                            const std::vector<std::string> &pMasqueradingVector,
                                            std::string &err)
 {
-    if(pMasqueradingVector.size() != 6)
+    if(pMasqueradingVector.size() != 9)
     {
         err = "Bad masquerading vector";
         return false;
@@ -1013,6 +1439,21 @@ bool Map::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
       if(!pMasqueradingVector[5].empty() && pJson.isMember(pMasqueradingVector[5]))
       {
           if(!validJsonOfField(5, pMasqueradingVector[5], pJson[pMasqueradingVector[5]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[6].empty() && pJson.isMember(pMasqueradingVector[6]))
+      {
+          if(!validJsonOfField(6, pMasqueradingVector[6], pJson[pMasqueradingVector[6]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[7].empty() && pJson.isMember(pMasqueradingVector[7]))
+      {
+          if(!validJsonOfField(7, pMasqueradingVector[7], pJson[pMasqueradingVector[7]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[8].empty() && pJson.isMember(pMasqueradingVector[8]))
+      {
+          if(!validJsonOfField(8, pMasqueradingVector[8], pJson[pMasqueradingVector[8]], err, false))
               return false;
       }
     }
@@ -1066,7 +1507,7 @@ bool Map::validJsonOfField(size_t index,
                 err="The " + fieldName + " column cannot be null";
                 return false;
             }
-            if(!pJson.isNumeric())
+            if(!pJson.isInt())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -1078,7 +1519,7 @@ bool Map::validJsonOfField(size_t index,
                 err="The " + fieldName + " column cannot be null";
                 return false;
             }
-            if(!pJson.isNumeric())
+            if(!pJson.isInt())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -1097,6 +1538,42 @@ bool Map::validJsonOfField(size_t index,
             }
             break;
         case 5:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isNumeric())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 6:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isNumeric())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 7:
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+            if(!pJson.isNumeric())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 8:
             if(pJson.isNull())
             {
                 err="The " + fieldName + " column cannot be null";

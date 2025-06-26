@@ -1,7 +1,7 @@
 #include "vrobot_route_follow/utils/visualization.hpp"
 #include <iostream>
 
-namespace mrpt_graphPose_pose {
+namespace vrobot_route_follow {
 namespace utils {
 
 // Explicit template instantiations for common types
@@ -449,4 +449,4 @@ Visualization<unsigned long, CPose2D, double>::createLinkAnalysisMarkers(
     const std::string &, const rclcpp::Time &) const;
 
 } // namespace utils
-} // namespace mrpt_graphPose_pose
+} // namespace vrobot_route_follow

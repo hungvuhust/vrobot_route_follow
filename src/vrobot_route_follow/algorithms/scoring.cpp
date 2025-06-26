@@ -3,7 +3,7 @@
 #include <cmath>
 #include <stdexcept>
 
-namespace mrpt_graphPose_pose {
+namespace vrobot_route_follow {
 namespace algorithms {
 
 // Explicit template instantiations for common types
@@ -233,4 +233,4 @@ ScoringSystem<unsigned long, CPose2D, double>::calculateMetrics(
     const std::vector<bool> &, const std::vector<bool> &) const;
 
 } // namespace algorithms
-} // namespace mrpt_graphPose_pose
+} // namespace vrobot_route_follow

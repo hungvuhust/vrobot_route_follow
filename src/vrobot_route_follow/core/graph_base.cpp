@@ -1,6 +1,6 @@
 #include "vrobot_route_follow/core/graph_base.hpp"
 
-namespace mrpt_graphPose_pose {
+namespace vrobot_route_follow {
 namespace core {
 
 // Explicit template instantiations for common types
@@ -12,4 +12,4 @@ template class GraphBase<long, CPose2D, double>;
 // Currently, most methods are inline in the header
 
 } // namespace core
-} // namespace mrpt_graphPose_pose
+} // namespace vrobot_route_follow

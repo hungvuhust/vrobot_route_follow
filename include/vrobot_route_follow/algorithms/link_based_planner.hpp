@@ -3,7 +3,7 @@
 #include "../core/pathfinding.hpp"
 #include "scoring.hpp"
 
-namespace mrpt_graphPose_pose {
+namespace vrobot_route_follow {
 namespace algorithms {
 
 /**
@@ -126,4 +126,4 @@ private:
 };
 
 } // namespace algorithms
-} // namespace mrpt_graphPose_pose
+} // namespace vrobot_route_follow

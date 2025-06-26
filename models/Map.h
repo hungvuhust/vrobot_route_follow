@@ -36,7 +36,9 @@ using DbClientPtr = std::shared_ptr<DbClient>;
 }
 namespace drogon_model
 {
-namespace vrobot
+namespace amr_01
+{
+namespace amr_ros2
 {
 
 class Map
@@ -46,6 +48,9 @@ class Map
     {
         static const std::string _id_map;
         static const std::string _map_name;
+        static const std::string _width;
+        static const std::string _height;
+        static const std::string _resolution;
         static const std::string _x;
         static const std::string _y;
         static const std::string _theta;
@@ -118,6 +123,30 @@ class Map
     void setMapName(const std::string &pMapName) noexcept;
     void setMapName(std::string &&pMapName) noexcept;
 
+    /**  For column width  */
+    ///Get the value of the column width, returns the default value if the column is null
+    const int32_t &getValueOfWidth() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int32_t> &getWidth() const noexcept;
+    ///Set the value of the column width
+    void setWidth(const int32_t &pWidth) noexcept;
+
+    /**  For column height  */
+    ///Get the value of the column height, returns the default value if the column is null
+    const int32_t &getValueOfHeight() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int32_t> &getHeight() const noexcept;
+    ///Set the value of the column height
+    void setHeight(const int32_t &pHeight) noexcept;
+
+    /**  For column resolution  */
+    ///Get the value of the column resolution, returns the default value if the column is null
+    const float &getValueOfResolution() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<float> &getResolution() const noexcept;
+    ///Set the value of the column resolution
+    void setResolution(const float &pResolution) noexcept;
+
     /**  For column x  */
     ///Get the value of the column x, returns the default value if the column is null
     const float &getValueOfX() const noexcept;
@@ -152,7 +181,7 @@ class Map
     void setImage(std::string &&pImage) noexcept;
 
 
-    static size_t getColumnNumber() noexcept {  return 6;  }
+    static size_t getColumnNumber() noexcept {  return 9;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -175,6 +204,9 @@ class Map
     void updateId(const uint64_t id);
     std::shared_ptr<int32_t> idMap_;
     std::shared_ptr<std::string> mapName_;
+    std::shared_ptr<int32_t> width_;
+    std::shared_ptr<int32_t> height_;
+    std::shared_ptr<float> resolution_;
     std::shared_ptr<float> x_;
     std::shared_ptr<float> y_;
     std::shared_ptr<float> theta_;
@@ -190,7 +222,7 @@ class Map
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[6]={ false };
+    bool dirtyFlag_[9]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -217,20 +249,35 @@ class Map
         }
         if(dirtyFlag_[2])
         {
-            sql += "x,";
+            sql += "width,";
             ++parametersCount;
         }
         if(dirtyFlag_[3])
         {
-            sql += "y,";
+            sql += "height,";
             ++parametersCount;
         }
         if(dirtyFlag_[4])
         {
-            sql += "theta,";
+            sql += "resolution,";
             ++parametersCount;
         }
         if(dirtyFlag_[5])
+        {
+            sql += "x,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[6])
+        {
+            sql += "y,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[7])
+        {
+            sql += "theta,";
+            ++parametersCount;
+        }
+        if(dirtyFlag_[8])
         {
             sql += "image,";
             ++parametersCount;
@@ -273,6 +320,21 @@ class Map
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
         }
+        if(dirtyFlag_[6])
+        {
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
+        if(dirtyFlag_[7])
+        {
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
+        if(dirtyFlag_[8])
+        {
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
         if(parametersCount > 0)
         {
             sql.resize(sql.length() - 1);
@@ -289,5 +351,6 @@ class Map
         return sql;
     }
 };
-} // namespace vrobot
+} // namespace amr_ros2
+} // namespace amr_01
 } // namespace drogon_model

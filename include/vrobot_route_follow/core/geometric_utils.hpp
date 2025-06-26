@@ -6,7 +6,7 @@
 #include <limits>
 #include <tuple>
 
-namespace mrpt_graphPose_pose {
+namespace vrobot_route_follow {
 namespace core {
 
 /**
@@ -103,4 +103,4 @@ private:
 };
 
 } // namespace core
-} // namespace mrpt_graphPose_pose
+} // namespace vrobot_route_follow

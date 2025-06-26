@@ -4,7 +4,7 @@
 #include <queue>
 #include <unordered_map>
 
-namespace mrpt_graphPose_pose {
+namespace vrobot_route_follow {
 namespace core {
 
 // Explicit template instantiations for common types
@@ -276,4 +276,4 @@ template bool Pathfinding<unsigned long, CPose2D, double>::isPathValid(
     const std::vector<std::pair<CPose2D, CPose2D>> &) const;
 
 } // namespace core
-} // namespace mrpt_graphPose_pose
+} // namespace vrobot_route_follow

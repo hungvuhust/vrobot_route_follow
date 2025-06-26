@@ -34,9 +34,9 @@ using namespace mrpt::graphs;
 
 class PathPlanningService : public rclcpp::Node {
 private:
-  rclcpp::Service<vrobot_route_follow::srv::PathPlanning>::SharedPtr     service_;
+  rclcpp::Service<vrobot_route_follow::srv::PathPlanning>::SharedPtr service_;
   std::shared_ptr<drogon::orm::DbClient>                             db_client_;
-  std::unique_ptr<mrpt_graphPose_pose::GraphPose<TNodeID, CPose2D>>  graph_;
+  std::unique_ptr<vrobot_route_follow::GraphPose<TNodeID, CPose2D>>  graph_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_viz_;
 
   // Cache để tránh reload database mỗi lần
@@ -71,7 +71,7 @@ public:
 private:
   void initDatabase() {
     db_client_ = DbClient::newPgClient(
-        "host=127.0.0.1 port=5432 dbname=vrobot user=vrobot password=1234", 1);
+        "host=127.0.0.1 port=5432 dbname=amr_01 user=amr password=1234512345", 1);
 
     if (!db_client_) {
       RCLCPP_ERROR(this->get_logger(), "Cannot connect to database");
@@ -83,9 +83,9 @@ private:
 
   bool loadGraphFromDatabase(std::string map_name) {
     try {
-      Mapper<drogon_model::vrobot::Straightlink> mapperLinks(db_client_);
-      Mapper<drogon_model::vrobot::Node>         mapperNodes(db_client_);
-      Mapper<drogon_model::vrobot::Map>          mapperMaps(db_client_);
+      Mapper<drogon_model::amr_01::amr_ros2::Straightlink> mapperLinks(db_client_);
+      Mapper<drogon_model::amr_01::amr_ros2::Node>         mapperNodes(db_client_);
+      Mapper<drogon_model::amr_01::amr_ros2::Map>          mapperMaps(db_client_);
       // get id of map have name map_name
       auto                                       maps = mapperMaps.findBy(
                                                 Criteria("map_name", CompareOperator::EQ, map_name));
@@ -118,14 +118,14 @@ private:
       // Load links
       for (const auto &link : links) {
         CPose2D start  = nodes_poses_[*link.getIdStart()];
-        CPose2D stop   = nodes_poses_[*link.getIdStop()];
+        CPose2D stop   = nodes_poses_[*link.getIdEnd()];
         double  weight = (stop - start).norm();
-        links_poses_.push_back({*link.getIdStart(), *link.getIdStop(), weight});
+        links_poses_.push_back({*link.getIdStart(), *link.getIdEnd(), weight});
       }
 
       // Tạo graph
       graph_ =
-          std::make_unique<mrpt_graphPose_pose::GraphPose<TNodeID, CPose2D>>(
+          std::make_unique<vrobot_route_follow::GraphPose<TNodeID, CPose2D>>(
               nodes_poses_, links_poses_);
 
       graph_loaded_ = true;
@@ -148,8 +148,9 @@ private:
 
   void handlePathPlanningRequest(
       const std::shared_ptr<vrobot_route_follow::srv::PathPlanning::Request>
-                                                                    request,
-      std::shared_ptr<vrobot_route_follow::srv::PathPlanning::Response> response) {
+          request,
+      std::shared_ptr<vrobot_route_follow::srv::PathPlanning::Response>
+          response) {
 
     RCLCPP_INFO(this->get_logger(),
                 "Received path planning request: target_node=%lu, "
@@ -186,7 +187,7 @@ private:
                           request->current_pose.theta);
 
       // Cấu hình planning
-      mrpt_graphPose_pose::GraphPose<TNodeID, CPose2D>::PlanningConfig config;
+      vrobot_route_follow::GraphPose<TNodeID, CPose2D>::PlanningConfig config;
       config.directThreshold = 0.3;
       config.maxLinkDistance = 0.5;
       config.enablePruning   = false;
