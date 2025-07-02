@@ -25,11 +25,11 @@ set(THIS_PACKAGE_DEPENDENCIES
   sensor_msgs
   geometry_msgs
   nav_msgs
-  nav2_msgs
   tf2
   tf2_ros
   tf2_geometry_msgs
   visualization_msgs
+  vrobot_local_planner
 )
 foreach(dep ${THIS_PACKAGE_DEPENDENCIES})
   find_package(${dep} REQUIRED)
@@ -148,7 +148,6 @@ target_include_directories(mrpt_graph_pose_lib
 )
 
 target_link_libraries(mrpt_graph_pose_lib
-
     mrpt::maps
     mrpt::math
     mrpt::ros2bridge

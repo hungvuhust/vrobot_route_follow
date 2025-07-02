@@ -17,6 +17,7 @@ const std::string Straightlink::Cols::_id_straight_link = "\"id_straight_link\""
 const std::string Straightlink::Cols::_id_start = "\"id_start\"";
 const std::string Straightlink::Cols::_id_end = "\"id_end\"";
 const std::string Straightlink::Cols::_map_id = "\"map_id\"";
+const std::string Straightlink::Cols::_max_velocity = "\"max_velocity\"";
 const std::string Straightlink::primaryKeyName = "id_straight_link";
 const bool Straightlink::hasPrimaryKey = true;
 const std::string Straightlink::tableName = "amr_ros2.\"straightlink\"";
@@ -25,7 +26,8 @@ const std::vector<typename Straightlink::MetaData> Straightlink::metaData_={
 {"id_straight_link","int32_t","integer",4,1,1,1},
 {"id_start","int32_t","integer",4,0,0,1},
 {"id_end","int32_t","integer",4,0,0,1},
-{"map_id","int32_t","integer",4,0,0,1}
+{"map_id","int32_t","integer",4,0,0,1},
+{"max_velocity","double","double precision",8,0,0,0}
 };
 const std::string &Straightlink::getColumnName(size_t index) noexcept(false)
 {
@@ -52,11 +54,15 @@ Straightlink::Straightlink(const Row &r, const ssize_t indexOffset) noexcept
         {
             mapId_=std::make_shared<int32_t>(r["map_id"].as<int32_t>());
         }
+        if(!r["max_velocity"].isNull())
+        {
+            maxVelocity_=std::make_shared<double>(r["max_velocity"].as<double>());
+        }
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 4 > r.size())
+        if(offset + 5 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -82,13 +88,18 @@ Straightlink::Straightlink(const Row &r, const ssize_t indexOffset) noexcept
         {
             mapId_=std::make_shared<int32_t>(r[index].as<int32_t>());
         }
+        index = offset + 4;
+        if(!r[index].isNull())
+        {
+            maxVelocity_=std::make_shared<double>(r[index].as<double>());
+        }
     }
 
 }
 
 Straightlink::Straightlink(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 4)
+    if(pMasqueradingVector.size() != 5)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -123,6 +134,14 @@ Straightlink::Straightlink(const Json::Value &pJson, const std::vector<std::stri
         if(!pJson[pMasqueradingVector[3]].isNull())
         {
             mapId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[3]].asInt64());
+        }
+    }
+    if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
+    {
+        dirtyFlag_[4] = true;
+        if(!pJson[pMasqueradingVector[4]].isNull())
+        {
+            maxVelocity_=std::make_shared<double>(pJson[pMasqueradingVector[4]].asDouble());
         }
     }
 }
@@ -161,12 +180,20 @@ Straightlink::Straightlink(const Json::Value &pJson) noexcept(false)
             mapId_=std::make_shared<int32_t>((int32_t)pJson["map_id"].asInt64());
         }
     }
+    if(pJson.isMember("max_velocity"))
+    {
+        dirtyFlag_[4]=true;
+        if(!pJson["max_velocity"].isNull())
+        {
+            maxVelocity_=std::make_shared<double>(pJson["max_velocity"].asDouble());
+        }
+    }
 }
 
 void Straightlink::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 4)
+    if(pMasqueradingVector.size() != 5)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -202,6 +229,14 @@ void Straightlink::updateByMasqueradedJson(const Json::Value &pJson,
             mapId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[3]].asInt64());
         }
     }
+    if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
+    {
+        dirtyFlag_[4] = true;
+        if(!pJson[pMasqueradingVector[4]].isNull())
+        {
+            maxVelocity_=std::make_shared<double>(pJson[pMasqueradingVector[4]].asDouble());
+        }
+    }
 }
 
 void Straightlink::updateByJson(const Json::Value &pJson) noexcept(false)
@@ -235,6 +270,14 @@ void Straightlink::updateByJson(const Json::Value &pJson) noexcept(false)
         if(!pJson["map_id"].isNull())
         {
             mapId_=std::make_shared<int32_t>((int32_t)pJson["map_id"].asInt64());
+        }
+    }
+    if(pJson.isMember("max_velocity"))
+    {
+        dirtyFlag_[4] = true;
+        if(!pJson["max_velocity"].isNull())
+        {
+            maxVelocity_=std::make_shared<double>(pJson["max_velocity"].asDouble());
         }
     }
 }
@@ -312,6 +355,28 @@ void Straightlink::setMapId(const int32_t &pMapId) noexcept
     dirtyFlag_[3] = true;
 }
 
+const double &Straightlink::getValueOfMaxVelocity() const noexcept
+{
+    static const double defaultValue = double();
+    if(maxVelocity_)
+        return *maxVelocity_;
+    return defaultValue;
+}
+const std::shared_ptr<double> &Straightlink::getMaxVelocity() const noexcept
+{
+    return maxVelocity_;
+}
+void Straightlink::setMaxVelocity(const double &pMaxVelocity) noexcept
+{
+    maxVelocity_ = std::make_shared<double>(pMaxVelocity);
+    dirtyFlag_[4] = true;
+}
+void Straightlink::setMaxVelocityToNull() noexcept
+{
+    maxVelocity_.reset();
+    dirtyFlag_[4] = true;
+}
+
 void Straightlink::updateId(const uint64_t id)
 {
 }
@@ -321,7 +386,8 @@ const std::vector<std::string> &Straightlink::insertColumns() noexcept
     static const std::vector<std::string> inCols={
         "id_start",
         "id_end",
-        "map_id"
+        "map_id",
+        "max_velocity"
     };
     return inCols;
 }
@@ -361,6 +427,17 @@ void Straightlink::outputArgs(drogon::orm::internal::SqlBinder &binder) const
             binder << nullptr;
         }
     }
+    if(dirtyFlag_[4])
+    {
+        if(getMaxVelocity())
+        {
+            binder << getValueOfMaxVelocity();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
 }
 
 const std::vector<std::string> Straightlink::updateColumns() const
@@ -377,6 +454,10 @@ const std::vector<std::string> Straightlink::updateColumns() const
     if(dirtyFlag_[3])
     {
         ret.push_back(getColumnName(3));
+    }
+    if(dirtyFlag_[4])
+    {
+        ret.push_back(getColumnName(4));
     }
     return ret;
 }
@@ -410,6 +491,17 @@ void Straightlink::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         if(getMapId())
         {
             binder << getValueOfMapId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+    if(dirtyFlag_[4])
+    {
+        if(getMaxVelocity())
+        {
+            binder << getValueOfMaxVelocity();
         }
         else
         {
@@ -452,6 +544,14 @@ Json::Value Straightlink::toJson() const
     {
         ret["map_id"]=Json::Value();
     }
+    if(getMaxVelocity())
+    {
+        ret["max_velocity"]=getValueOfMaxVelocity();
+    }
+    else
+    {
+        ret["max_velocity"]=Json::Value();
+    }
     return ret;
 }
 
@@ -459,7 +559,7 @@ Json::Value Straightlink::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 4)
+    if(pMasqueradingVector.size() == 5)
     {
         if(!pMasqueradingVector[0].empty())
         {
@@ -505,6 +605,17 @@ Json::Value Straightlink::toMasqueradedJson(
                 ret[pMasqueradingVector[3]]=Json::Value();
             }
         }
+        if(!pMasqueradingVector[4].empty())
+        {
+            if(getMaxVelocity())
+            {
+                ret[pMasqueradingVector[4]]=getValueOfMaxVelocity();
+            }
+            else
+            {
+                ret[pMasqueradingVector[4]]=Json::Value();
+            }
+        }
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
@@ -539,6 +650,14 @@ Json::Value Straightlink::toMasqueradedJson(
     else
     {
         ret["map_id"]=Json::Value();
+    }
+    if(getMaxVelocity())
+    {
+        ret["max_velocity"]=getValueOfMaxVelocity();
+    }
+    else
+    {
+        ret["max_velocity"]=Json::Value();
     }
     return ret;
 }
@@ -580,13 +699,18 @@ bool Straightlink::validateJsonForCreation(const Json::Value &pJson, std::string
         err="The map_id column cannot be null";
         return false;
     }
+    if(pJson.isMember("max_velocity"))
+    {
+        if(!validJsonOfField(4, "max_velocity", pJson["max_velocity"], err, true))
+            return false;
+    }
     return true;
 }
 bool Straightlink::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                       const std::vector<std::string> &pMasqueradingVector,
                                                       std::string &err)
 {
-    if(pMasqueradingVector.size() != 4)
+    if(pMasqueradingVector.size() != 5)
     {
         err = "Bad masquerading vector";
         return false;
@@ -639,6 +763,14 @@ bool Straightlink::validateMasqueradedJsonForCreation(const Json::Value &pJson,
             return false;
         }
       }
+      if(!pMasqueradingVector[4].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[4]))
+          {
+              if(!validJsonOfField(4, pMasqueradingVector[4], pJson[pMasqueradingVector[4]], err, true))
+                  return false;
+          }
+      }
     }
     catch(const Json::LogicError &e)
     {
@@ -674,13 +806,18 @@ bool Straightlink::validateJsonForUpdate(const Json::Value &pJson, std::string &
         if(!validJsonOfField(3, "map_id", pJson["map_id"], err, false))
             return false;
     }
+    if(pJson.isMember("max_velocity"))
+    {
+        if(!validJsonOfField(4, "max_velocity", pJson["max_velocity"], err, false))
+            return false;
+    }
     return true;
 }
 bool Straightlink::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                     const std::vector<std::string> &pMasqueradingVector,
                                                     std::string &err)
 {
-    if(pMasqueradingVector.size() != 4)
+    if(pMasqueradingVector.size() != 5)
     {
         err = "Bad masquerading vector";
         return false;
@@ -709,6 +846,11 @@ bool Straightlink::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
       if(!pMasqueradingVector[3].empty() && pJson.isMember(pMasqueradingVector[3]))
       {
           if(!validJsonOfField(3, pMasqueradingVector[3], pJson[pMasqueradingVector[3]], err, false))
+              return false;
+      }
+      if(!pMasqueradingVector[4].empty() && pJson.isMember(pMasqueradingVector[4]))
+      {
+          if(!validJsonOfField(4, pMasqueradingVector[4], pJson[pMasqueradingVector[4]], err, false))
               return false;
       }
     }
@@ -775,6 +917,17 @@ bool Straightlink::validJsonOfField(size_t index,
                 return false;
             }
             if(!pJson.isInt())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+            break;
+        case 4:
+            if(pJson.isNull())
+            {
+                return true;
+            }
+            if(!pJson.isNumeric())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

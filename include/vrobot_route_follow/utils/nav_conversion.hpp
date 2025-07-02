@@ -5,6 +5,8 @@
 #include <nav_msgs/msg/path.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <vrobot_local_planner/msg/path.hpp>
+#include <vrobot_local_planner/msg/planner_pose.hpp>
 
 namespace vrobot_route_follow {
 namespace utils {
@@ -22,13 +24,16 @@ class NavConversion
 public:
   using Base        = core::GraphBase<NodeID, Pose2D, WeightType>;
   using PathSegment = std::pair<Pose2D, Pose2D>;
+  using VPathSegment =
+      std::pair<PathSegment, double>; // (path segment, max_vel)
 
   // ========================================================================
   // PATH INTERPOLATION
   // ========================================================================
 
   /**
-   * @brief Interpolate poses along path segments with configurable resolution
+   * @brief Interpolate poses along path segments with configurable
+   * resolution
    * @param pathSegments Vector of path segments
    * @param resolution Distance between interpolated poses (meters)
    * @return Vector of interpolated poses
@@ -36,6 +41,9 @@ public:
   std::vector<Pose2D>
   interpolatePoses(const std::vector<PathSegment> &pathSegments,
                    double                          resolution = 0.01) const;
+
+  std::vector<Pose2D> interpolatePoses(const PathSegment &pathSegment,
+                                       double resolution = 0.01) const;
 
   // ========================================================================
   // ROS2 NAV_MSGS CONVERSION
@@ -53,6 +61,20 @@ public:
                                 const std::string              &frameId,
                                 const rclcpp::Time             &timestamp,
                                 double resolution = 0.01) const;
+
+  /**
+   * @brief Convert path segments to vrobot_local_planner::msg::Path with
+   * interpolation
+   * @param pathSegments Vector of path segments
+   * @param frameId Frame ID for the path
+   * @param timestamp Timestamp for the path
+   * @param resolution Interpolation resolution (meters)
+   * @return vrobot_local_planner::msg::Path
+   */
+  vrobot_local_planner::msg::Path
+  toVPath(const std::vector<VPathSegment> &pathSegments,
+          const std::string &frameId, const rclcpp::Time &timestamp,
+          double resolution = 0.01) const;
 };
 
 } // namespace utils

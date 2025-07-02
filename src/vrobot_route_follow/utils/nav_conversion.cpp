@@ -53,6 +53,12 @@ std::vector<Pose2D> NavConversion<NodeID, Pose2D, WeightType>::interpolatePoses(
 }
 
 template <typename NodeID, typename Pose2D, typename WeightType>
+std::vector<Pose2D> NavConversion<NodeID, Pose2D, WeightType>::interpolatePoses(
+    const PathSegment &pathSegment, double resolution) const {
+  return interpolatePoses(std::vector<PathSegment>{pathSegment}, resolution);
+}
+
+template <typename NodeID, typename Pose2D, typename WeightType>
 nav_msgs::msg::Path NavConversion<NodeID, Pose2D, WeightType>::toNavPath(
     const std::vector<PathSegment> &pathSegments, const std::string &frameId,
     const rclcpp::Time &timestamp, double resolution) const {
@@ -86,10 +92,48 @@ nav_msgs::msg::Path NavConversion<NodeID, Pose2D, WeightType>::toNavPath(
     q.setRPY(0, 0, pose.phi());
     poseStamped.pose.orientation = tf2::toMsg(q);
 
-    navPath.poses.push_back(poseStamped);
+    navPath.poses.emplace_back(poseStamped);
   }
 
   return navPath;
+}
+
+template <typename NodeID, typename Pose2D, typename WeightType>
+vrobot_local_planner::msg::Path
+NavConversion<NodeID, Pose2D, WeightType>::toVPath(
+    const std::vector<VPathSegment> &vpathSegments, const std::string &frameId,
+    const rclcpp::Time &timestamp, double resolution) const {
+  vrobot_local_planner::msg::Path vPath;
+  vPath.header.frame_id = frameId;
+  vPath.header.stamp    = timestamp;
+
+  for (const auto &segment : vpathSegments) {
+
+    // Interpolate poses
+    std::vector<Pose2D> interpolatedPoses =
+        interpolatePoses(segment.first, resolution);
+
+    for (const auto &pose : interpolatedPoses) {
+      vrobot_local_planner::msg::PlannerPose plannerPose;
+      plannerPose.header.frame_id = frameId;
+      plannerPose.header.stamp    = timestamp;
+
+      plannerPose.pose.position.x = pose.x();
+      plannerPose.pose.position.y = pose.y();
+      plannerPose.pose.position.z = 0.0;
+
+      // Convert angle to quaternion
+      tf2::Quaternion q;
+      q.setRPY(0, 0, pose.phi());
+      plannerPose.pose.orientation = tf2::toMsg(q);
+
+      plannerPose.speed = segment.second;
+
+      vPath.poses.emplace_back(plannerPose);
+    }
+  }
+
+  return vPath;
 }
 
 // Explicit instantiations for the template methods
@@ -109,6 +153,23 @@ template nav_msgs::msg::Path
 NavConversion<unsigned long, CPose2D, double>::toNavPath(
     const std::vector<PathSegment> &, const std::string &, const rclcpp::Time &,
     double) const;
+
+template vrobot_local_planner::msg::Path
+NavConversion<unsigned long, CPose2D, double>::toVPath(
+    const std::vector<VPathSegment> &, const std::string &,
+    const rclcpp::Time &, double) const;
+
+template vrobot_local_planner::msg::Path
+NavConversion<int, CPose2D, double>::toVPath(const std::vector<VPathSegment> &,
+                                             const std::string &,
+                                             const rclcpp::Time &,
+                                             double) const;
+
+template vrobot_local_planner::msg::Path
+NavConversion<long, CPose2D, double>::toVPath(const std::vector<VPathSegment> &,
+                                              const std::string &,
+                                              const rclcpp::Time &,
+                                              double) const;
 
 } // namespace utils
 } // namespace vrobot_route_follow

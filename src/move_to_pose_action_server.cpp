@@ -25,7 +25,8 @@
 #include "vrobot_route_follow/utils/visualization.hpp"
 
 // Action messages
-#include "nav2_msgs/action/follow_path.hpp"
+#include "vrobot_local_planner/action/follow_path.hpp"
+#include "vrobot_local_planner/action/v_follow_path.hpp"
 #include "vrobot_route_follow/action/move_to_pose.hpp"
 
 // Geometry messages
@@ -42,18 +43,25 @@ class MoveToPoseActionServer : public rclcpp::Node {
 private:
   rclcpp_action::Server<vrobot_route_follow::action::MoveToPose>::SharedPtr
       action_server_;
-  rclcpp_action::Client<nav2_msgs::action::FollowPath>::SharedPtr
+  rclcpp_action::Client<vrobot_local_planner::action::FollowPath>::SharedPtr
       follow_path_client_;
+  rclcpp_action::Client<vrobot_local_planner::action::VFollowPath>::SharedPtr
+      v_follow_path_client_;
 
   // Database components
-  std::shared_ptr<drogon::orm::DbClient>                             db_client_;
-  std::unique_ptr<vrobot_route_follow::GraphPose<TNodeID, CPose2D>>  graph_;
+  std::shared_ptr<drogon::orm::DbClient> db_client_;
+  std::unique_ptr<
+      vrobot_route_follow::GraphPose<TNodeID, CPose2D, double, double>>
+                                                                     graph_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_viz_;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher_;
+  rclcpp::Publisher<vrobot_local_planner::msg::Path>::SharedPtr
+      vpath_publisher_;
 
   // Cache to avoid reloading database every time
-  std::unordered_map<TNodeID, CPose2D>              nodes_poses_;
-  std::vector<std::tuple<TNodeID, TNodeID, double>> links_poses_;
+  std::unordered_map<TNodeID, CPose2D> nodes_poses_;
+  std::vector<std::tuple<TNodeID, TNodeID, double, double>>
+      links_poses_with_vel_;
 
 public:
   MoveToPoseActionServer() : Node("move_to_pose_action_server") {
@@ -69,10 +77,18 @@ public:
     path_publisher_ = this->create_publisher<nav_msgs::msg::Path>(
         "route_path", rclcpp::QoS(10).transient_local().reliable());
 
+    vpath_publisher_ = this->create_publisher<vrobot_local_planner::msg::Path>(
+        "route_vpath", rclcpp::QoS(10).transient_local().reliable());
+
     // Create follow path action client
     follow_path_client_ =
-        rclcpp_action::create_client<nav2_msgs::action::FollowPath>(
+        rclcpp_action::create_client<vrobot_local_planner::action::FollowPath>(
             this, "follow_path");
+
+    // Create v follow path action client
+    v_follow_path_client_ =
+        rclcpp_action::create_client<vrobot_local_planner::action::VFollowPath>(
+            this, "v_follow_path");
 
     // Create action server
     action_server_ =
@@ -129,8 +145,8 @@ private:
 
       // Clear previous data
       nodes_poses_.clear();
-      links_poses_.clear();
-      links_poses_.reserve(links.size());
+      links_poses_with_vel_.clear();
+      links_poses_with_vel_.reserve(links.size());
 
       // Load nodes
       for (const auto &node : nodes) {
@@ -140,20 +156,23 @@ private:
 
       // Load links
       for (const auto &link : links) {
-        CPose2D start  = nodes_poses_[*link.getIdStart()];
-        CPose2D stop   = nodes_poses_[*link.getIdEnd()];
-        double  weight = (stop - start).norm();
-        links_poses_.push_back({*link.getIdStart(), *link.getIdEnd(), weight});
+        CPose2D start   = nodes_poses_[*link.getIdStart()];
+        CPose2D stop    = nodes_poses_[*link.getIdEnd()];
+        double  weight  = (stop - start).norm();
+        double  max_vel = link.getMaxVelocity() ? *link.getMaxVelocity() : 2.0;
+        links_poses_with_vel_.push_back(
+            {*link.getIdStart(), *link.getIdEnd(), weight, max_vel});
       }
 
       // Create graph
-      graph_ =
-          std::make_unique<vrobot_route_follow::GraphPose<TNodeID, CPose2D>>(
-              nodes_poses_, links_poses_);
+      graph_ = std::make_unique<
+          vrobot_route_follow::GraphPose<TNodeID, CPose2D, double, double>>(
+          nodes_poses_, links_poses_with_vel_);
 
       RCLCPP_INFO(this->get_logger(),
                   "Loaded graph successfully: %zu nodes, %zu links for map: %s",
-                  nodes_poses_.size(), links_poses_.size(), map_name.c_str());
+                  nodes_poses_.size(), links_poses_with_vel_.size(),
+                  map_name.c_str());
 
       // Publish visualization
       auto vis_markers =
@@ -181,7 +200,8 @@ private:
         goal->current_pose.y, goal->current_pose.theta);
 
     // Check if follow path action is available
-    if (!follow_path_client_->wait_for_action_server(std::chrono::seconds(5))) {
+    if (!v_follow_path_client_->wait_for_action_server(
+            std::chrono::seconds(5))) {
       RCLCPP_ERROR(this->get_logger(),
                    "Follow path action server is not available");
       return rclcpp_action::GoalResponse::REJECT;
@@ -249,7 +269,8 @@ private:
                           goal->current_pose.theta);
 
       // Configure planning
-      vrobot_route_follow::GraphPose<TNodeID, CPose2D>::PlanningConfig config;
+      vrobot_route_follow::GraphPose<TNodeID, CPose2D, double,
+                                     double>::PlanningConfig config;
       config.directThreshold = 0.3;
       config.maxLinkDistance = 0.5;
       config.enablePruning   = false;
@@ -293,14 +314,15 @@ private:
   }
 
   // Function để chia nhỏ đường đi dựa trên góc lệch tối đa
-  std::vector<vrobot_route_follow::GraphPose<TNodeID, CPose2D>::PlanningResult>
+  std::vector<vrobot_route_follow::GraphPose<TNodeID, CPose2D, double,
+                                             double>::PlanningResult>
   refinePathWithAngleConstraint(
-      const vrobot_route_follow::GraphPose<TNodeID, CPose2D>::PlanningResult
-            &original_result,
+      const vrobot_route_follow::GraphPose<
+          TNodeID, CPose2D, double, double>::PlanningResult &original_result,
       double max_angle_degrees) {
 
-    std::vector<
-        vrobot_route_follow::GraphPose<TNodeID, CPose2D>::PlanningResult>
+    std::vector<vrobot_route_follow::GraphPose<TNodeID, CPose2D, double,
+                                               double>::PlanningResult>
         path_segments;
 
     if (original_result.pathSegments.size() <= 1) {
@@ -366,8 +388,8 @@ private:
       size_t start_idx = split_indices[i];
       size_t end_idx   = split_indices[i + 1];
 
-      vrobot_route_follow::GraphPose<TNodeID, CPose2D>::PlanningResult
-          segment_result;
+      vrobot_route_follow::GraphPose<TNodeID, CPose2D, double,
+                                     double>::PlanningResult segment_result;
       segment_result.success       = true;
       segment_result.algorithmUsed = original_result.algorithmUsed + "_refined";
 
@@ -395,6 +417,7 @@ private:
                              std::to_string(path_points[end_idx].y()) + ")";
 
       segment_result.pathSegments  = segment_path;
+      segment_result.vpathSegments = graph_->pathSegmentsToVPath(segment_path);
       segment_result.totalDistance = segment_distance;
 
       // Copy metadata từ original result
@@ -440,8 +463,8 @@ private:
 
   // Function để log thông tin nodes trong một segment
   std::string getSegmentNodesInfo(
-      const vrobot_route_follow::GraphPose<TNodeID, CPose2D>::PlanningResult
-          &segment) const {
+      const vrobot_route_follow::GraphPose<
+          TNodeID, CPose2D, double, double>::PlanningResult &segment) const {
     std::string          nodes_info = "Nodes: ";
     std::vector<TNodeID> visited_nodes;
 
@@ -474,10 +497,9 @@ private:
   // Function để execute từng path segment tuần tự
   void executePathSegments(
       const std::shared_ptr<rclcpp_action::ServerGoalHandle<
-          vrobot_route_follow::action::MoveToPose>> &goal_handle,
-      const std::vector<
-          vrobot_route_follow::GraphPose<TNodeID, CPose2D>::PlanningResult>
-            &path_segments,
+          vrobot_route_follow::action::MoveToPose>>          &goal_handle,
+      const std::vector<vrobot_route_follow::GraphPose<
+          TNodeID, CPose2D, double, double>::PlanningResult> &path_segments,
       double total_distance, std::chrono::steady_clock::time_point start_time) {
 
     // Tạo shared state để track tiến độ qua các segments
@@ -507,8 +529,8 @@ private:
     std::shared_ptr<rclcpp_action::ServerGoalHandle<
         vrobot_route_follow::action::MoveToPose>>
         goal_handle;
-    std::vector<
-        vrobot_route_follow::GraphPose<TNodeID, CPose2D>::PlanningResult>
+    std::vector<vrobot_route_follow::GraphPose<TNodeID, CPose2D, double,
+                                               double>::PlanningResult>
                                           path_segments;
     double                                total_distance;
     std::chrono::steady_clock::time_point start_time;
@@ -520,6 +542,11 @@ private:
 
   // Function để execute segment tiếp theo
   void executeNextSegment(std::shared_ptr<SegmentExecutionState> state) {
+    bool is_last_segment = false;
+    if (state->current_segment == state->path_segments.size() - 1) {
+      is_last_segment = true;
+    }
+
     if (state->current_segment >= state->path_segments.size()) {
       // Hoàn thành tất cả segments
       auto result =
@@ -557,18 +584,29 @@ private:
                 current_segment.totalDistance.value_or(0.0));
 
     // Convert segment to nav_msgs::Path
+    auto v_path = graph_->planningResultToVPath(current_segment, "map",
+                                                this->now(), 0.02);
+    vpath_publisher_->publish(v_path);
+
     auto nav_path = graph_->planningResultToNavPath(current_segment, "map",
                                                     this->now(), 0.02);
     path_publisher_->publish(nav_path);
 
     // Tạo follow path goal - thử với empty IDs trước
-    auto follow_goal            = nav2_msgs::action::FollowPath::Goal();
-    follow_goal.goal_checker_id = ""; // Empty = use default
-    follow_goal.controller_id   = ""; // Empty = use default
-    follow_goal.path            = nav_path;
+    auto follow_goal = vrobot_local_planner::action::VFollowPath::Goal();
+    if (!is_last_segment) {
+      follow_goal.goal_checker_id =
+          "simple_goal_checker";      // Empty = use default
+      follow_goal.controller_id = ""; // Empty = use default
+    } else {
+      follow_goal.goal_checker_id =
+          "stopped_goal_checker";     // Empty = use default
+      follow_goal.controller_id = ""; // Empty = use default
+    }
+    follow_goal.path = v_path;
 
     // Validate path trước khi gửi
-    if (nav_path.poses.empty()) {
+    if (v_path.poses.empty()) {
       RCLCPP_ERROR(this->get_logger(), "❌ Empty path for segment %zu",
                    state->current_segment + 1);
 
@@ -582,19 +620,20 @@ private:
       return;
     }
 
-    auto send_goal_options =
-        rclcpp_action::Client<nav2_msgs::action::FollowPath>::SendGoalOptions();
+    auto send_goal_options = rclcpp_action::Client<
+        vrobot_local_planner::action::VFollowPath>::SendGoalOptions();
 
     // Ghi lại thời gian bắt đầu gửi goal
     auto send_time = std::chrono::steady_clock::now();
 
     // Feedback callback
     send_goal_options.feedback_callback =
-        [this, state](
-            rclcpp_action::ClientGoalHandle<
-                nav2_msgs::action::FollowPath>::SharedPtr,
-            const std::shared_ptr<const nav2_msgs::action::FollowPath::Feedback>
-                follow_feedback) {
+        [this,
+         state](rclcpp_action::ClientGoalHandle<
+                    vrobot_local_planner::action::VFollowPath>::SharedPtr,
+                const std::shared_ptr<
+                    const vrobot_local_planner::action::VFollowPath::Feedback>
+                    follow_feedback) {
           // Đánh dấu đã nhận feedback
           if (!state->received_feedback) {
             state->received_feedback = true;
@@ -626,8 +665,8 @@ private:
     send_goal_options
         .result_callback = [this, state, send_time](
                                const rclcpp_action::ClientGoalHandle<
-                                   nav2_msgs::action::FollowPath>::WrappedResult
-                                   &follow_result) {
+                                   vrobot_local_planner::action::VFollowPath>::
+                                   WrappedResult &follow_result) {
       auto result_time = std::chrono::steady_clock::now();
       auto duration    = std::chrono::duration_cast<std::chrono::milliseconds>(
           result_time - send_time);
@@ -688,7 +727,8 @@ private:
       }
     };
 
-    if (!follow_path_client_->wait_for_action_server(std::chrono::seconds(5))) {
+    if (!v_follow_path_client_->wait_for_action_server(
+            std::chrono::seconds(5))) {
       RCLCPP_ERROR(this->get_logger(),
                    "Follow path action server not available for segment %zu",
                    state->current_segment + 1);
@@ -704,7 +744,7 @@ private:
       return;
     }
 
-    follow_path_client_->async_send_goal(follow_goal, send_goal_options);
+    v_follow_path_client_->async_send_goal(follow_goal, send_goal_options);
   }
 
 private:

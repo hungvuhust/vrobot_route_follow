@@ -36,7 +36,9 @@ class PathPlanningService : public rclcpp::Node {
 private:
   rclcpp::Service<vrobot_route_follow::srv::PathPlanning>::SharedPtr service_;
   std::shared_ptr<drogon::orm::DbClient>                             db_client_;
-  std::unique_ptr<vrobot_route_follow::GraphPose<TNodeID, CPose2D>>  graph_;
+  std::unique_ptr<
+      vrobot_route_follow::GraphPose<TNodeID, CPose2D, double, double>>
+                                                                     graph_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_viz_;
 
   // Cache để tránh reload database mỗi lần
@@ -71,7 +73,8 @@ public:
 private:
   void initDatabase() {
     db_client_ = DbClient::newPgClient(
-        "host=127.0.0.1 port=5432 dbname=amr_01 user=amr password=1234512345", 1);
+        "host=127.0.0.1 port=5432 dbname=amr_01 user=amr password=1234512345",
+        1);
 
     if (!db_client_) {
       RCLCPP_ERROR(this->get_logger(), "Cannot connect to database");
@@ -83,12 +86,13 @@ private:
 
   bool loadGraphFromDatabase(std::string map_name) {
     try {
-      Mapper<drogon_model::amr_01::amr_ros2::Straightlink> mapperLinks(db_client_);
-      Mapper<drogon_model::amr_01::amr_ros2::Node>         mapperNodes(db_client_);
-      Mapper<drogon_model::amr_01::amr_ros2::Map>          mapperMaps(db_client_);
+      Mapper<drogon_model::amr_01::amr_ros2::Straightlink> mapperLinks(
+          db_client_);
+      Mapper<drogon_model::amr_01::amr_ros2::Node> mapperNodes(db_client_);
+      Mapper<drogon_model::amr_01::amr_ros2::Map>  mapperMaps(db_client_);
       // get id of map have name map_name
-      auto                                       maps = mapperMaps.findBy(
-                                                Criteria("map_name", CompareOperator::EQ, map_name));
+      auto                                         maps = mapperMaps.findBy(
+                                                  Criteria("map_name", CompareOperator::EQ, map_name));
       if (maps.empty()) {
         throw std::runtime_error("Map " + map_name + " not found");
       }
@@ -124,9 +128,9 @@ private:
       }
 
       // Tạo graph
-      graph_ =
-          std::make_unique<vrobot_route_follow::GraphPose<TNodeID, CPose2D>>(
-              nodes_poses_, links_poses_);
+      graph_ = std::make_unique<
+          vrobot_route_follow::GraphPose<TNodeID, CPose2D, double, double>>(
+          nodes_poses_, links_poses_);
 
       graph_loaded_ = true;
       RCLCPP_INFO(this->get_logger(),
@@ -187,7 +191,8 @@ private:
                           request->current_pose.theta);
 
       // Cấu hình planning
-      vrobot_route_follow::GraphPose<TNodeID, CPose2D>::PlanningConfig config;
+      vrobot_route_follow::GraphPose<TNodeID, CPose2D, double,
+                                     double>::PlanningConfig config;
       config.directThreshold = 0.3;
       config.maxLinkDistance = 0.5;
       config.enablePruning   = false;

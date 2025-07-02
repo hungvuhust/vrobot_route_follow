@@ -22,7 +22,7 @@ namespace vrobot_route_follow {
  * @tparam WeightType Type for edge weights (default: double)
  */
 template <typename NodeID = int, typename Pose2D = CPose2D,
-          typename WeightType = double>
+          typename WeightType = double, typename VelocityType = double>
 class GraphPose
     : public virtual core::GraphBase<NodeID, Pose2D, WeightType>,
       public virtual core::GeometricUtils<NodeID, Pose2D, WeightType>,
@@ -34,6 +34,8 @@ class GraphPose
 public:
   using Base        = core::GraphBase<NodeID, Pose2D, WeightType>;
   using PathSegment = std::pair<Pose2D, Pose2D>;
+  using VPathSegment =
+      std::pair<PathSegment, double>; // (path segment, max_vel)
 
   // ========================================================================
   // CONSTRUCTORS
@@ -51,6 +53,12 @@ public:
    */
   GraphPose(const std::unordered_map<NodeID, Pose2D>                  &nodes,
             const std::vector<std::tuple<NodeID, NodeID, WeightType>> &edges)
+      : Base(nodes, edges) {}
+
+  GraphPose(
+      const std::unordered_map<NodeID, Pose2D> &nodes,
+      const std::vector<std::tuple<NodeID, NodeID, WeightType, VelocityType>>
+          &edges)
       : Base(nodes, edges) {}
 
   // ========================================================================
@@ -81,6 +89,7 @@ public:
 
   struct PlanningResult {
     std::vector<PathSegment>      pathSegments;
+    std::vector<VPathSegment>     vpathSegments;
     std::optional<double>         totalDistance;
     std::string                   algorithmUsed;
     std::string                   errorMessage;
@@ -104,6 +113,19 @@ public:
                                               const std::string    &frameId,
                                               const rclcpp::Time   &timestamp,
                                               double resolution = 0.01) const;
+
+  vrobot_local_planner::msg::Path planningResultToVPath(
+      const PlanningResult &result, const std::string &frameId,
+      const rclcpp::Time &timestamp, double resolution = 0.01) const;
+
+  /**
+   * @brief Convert path segments to velocity path segments using edge
+   * velocities
+   * @param pathSegments Vector of path segments
+   * @return Vector of velocity path segments
+   */
+  std::vector<VPathSegment>
+  pathSegmentsToVPath(const std::vector<PathSegment> &pathSegments) const;
 
   // ========================================================================
   // DEBUGGING AND ANALYSIS
@@ -140,7 +162,7 @@ public:
 // TYPE ALIASES FOR CONVENIENCE
 // ========================================================================
 
-using GraphPoseInt    = GraphPose<int, CPose2D, double>;
-using GraphPoseString = GraphPose<std::string, CPose2D, double>;
+using GraphPoseInt    = GraphPose<int, CPose2D, double, double>;
+using GraphPoseString = GraphPose<std::string, CPose2D, double, double>;
 
 } // namespace vrobot_route_follow

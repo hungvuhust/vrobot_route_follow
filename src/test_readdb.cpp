@@ -56,8 +56,10 @@ int main(int argc, char **argv) {
   Mapper<drogon_model::amr_01::amr_ros2::Straightlink> mapperLinks(client);
   Mapper<drogon_model::amr_01::amr_ros2::Node>         mapperNodes(client);
 
-  std::vector<drogon_model::amr_01::amr_ros2::Straightlink> links = mapperLinks.findAll();
-  std::vector<drogon_model::amr_01::amr_ros2::Node>         nodes = mapperNodes.findAll();
+  std::vector<drogon_model::amr_01::amr_ros2::Straightlink> links =
+      mapperLinks.findAll();
+  std::vector<drogon_model::amr_01::amr_ros2::Node> nodes =
+      mapperNodes.findAll();
 
   if (links.empty() || nodes.empty()) {
     LOG_ERROR << "No data found in the database";
@@ -83,8 +85,8 @@ int main(int argc, char **argv) {
   }
 
   // Create graph using new organized structure
-  vrobot_route_follow::GraphPose<TNodeID, CPose2D> graph(nodes_poses,
-                                                         links_poses);
+  vrobot_route_follow::GraphPose<TNodeID, CPose2D, double, double> graph(
+      nodes_poses, links_poses);
 
   // Create visualization using new utilities with labels and directions
   auto vis_markers =
@@ -106,7 +108,8 @@ int main(int argc, char **argv) {
             << ")" << std::endl;
 
   // Use new high-level interface
-  vrobot_route_follow::GraphPose<TNodeID, CPose2D>::PlanningConfig config;
+  vrobot_route_follow::GraphPose<TNodeID, CPose2D, double,
+                                 double>::PlanningConfig config;
   config.directThreshold = 0.3;
   config.maxLinkDistance = 0.5;
   config.enablePruning   = false;

@@ -22,6 +22,14 @@ class GraphBase {
 public:
   using EdgePair = std::pair<NodeID, NodeID>;
 
+  // Hash function for EdgePair
+  struct EdgePairHash {
+    std::size_t operator()(const EdgePair &pair) const {
+      return std::hash<NodeID>()(pair.first) ^
+             (std::hash<NodeID>()(pair.second) << 1);
+    }
+  };
+
   // ========================================================================
   // CONSTRUCTORS & INITIALIZATION
   // ========================================================================
@@ -39,6 +47,19 @@ public:
   GraphBase(const std::unordered_map<NodeID, Pose2D>                  &nodes,
             const std::vector<std::tuple<NodeID, NodeID, WeightType>> &edges) {
     buildGraph(nodes, edges);
+  }
+
+  /**
+   * @brief Construct graph from nodes and edges with velocity
+   * @param nodes Map of nodeID to pose
+   * @param edges Vector of (fromID, toID, weight, velocity) tuples
+   */
+  template <typename VelocityType>
+  GraphBase(
+      const std::unordered_map<NodeID, Pose2D> &nodes,
+      const std::vector<std::tuple<NodeID, NodeID, WeightType, VelocityType>>
+          &edges) {
+    buildGraphWithVelocity(nodes, edges);
   }
 
   /**
@@ -62,6 +83,36 @@ public:
       WeightType w;
       std::tie(u, v, w) = e;
       adjList_[u].emplace_back(v, w);
+    }
+  }
+
+  /**
+   * @brief Build graph from nodes and edges with velocity data
+   * @param nodes Map of nodeID to pose
+   * @param edges Vector of (fromID, toID, weight, velocity) tuples
+   */
+  template <typename VelocityType>
+  void buildGraphWithVelocity(
+      const std::unordered_map<NodeID, Pose2D> &nodes,
+      const std::vector<std::tuple<NodeID, NodeID, WeightType, VelocityType>>
+          &edges) {
+    nodePoses_ = nodes;
+
+    // Initialize adjacency list and velocity map
+    for (const auto &np : nodes) {
+      adjList_[np.first] = {};
+    }
+
+    // Add directed edges with velocity
+    for (const auto &e : edges) {
+      NodeID       u, v;
+      WeightType   w;
+      VelocityType vel;
+      std::tie(u, v, w, vel) = e;
+      adjList_[u].emplace_back(v, w);
+
+      // Store velocity for this edge
+      edgeVelocities_[{u, v}] = static_cast<double>(vel);
     }
   }
 
@@ -149,6 +200,31 @@ public:
   void clear() {
     nodePoses_.clear();
     adjList_.clear();
+    edgeVelocities_.clear();
+  }
+
+  /**
+   * @brief Get velocity for an edge
+   * @param fromNode Source node
+   * @param toNode Target node
+   * @return Velocity for the edge, or 1.0 if not found
+   */
+  double getEdgeVelocity(const NodeID &fromNode, const NodeID &toNode) const {
+    auto it = edgeVelocities_.find({fromNode, toNode});
+    if (it != edgeVelocities_.end()) {
+      return it->second;
+    }
+    return 1.0; // Default velocity if not found
+  }
+
+  /**
+   * @brief Check if edge has velocity data
+   * @param fromNode Source node
+   * @param toNode Target node
+   * @return True if edge has velocity data
+   */
+  bool hasEdgeVelocity(const NodeID &fromNode, const NodeID &toNode) const {
+    return edgeVelocities_.find({fromNode, toNode}) != edgeVelocities_.end();
   }
 
 protected:
@@ -158,7 +234,8 @@ protected:
 
   std::unordered_map<NodeID, Pose2D> nodePoses_;
   std::unordered_map<NodeID, std::vector<std::pair<NodeID, WeightType>>>
-      adjList_;
+                                                     adjList_;
+  std::unordered_map<EdgePair, double, EdgePairHash> edgeVelocities_;
 };
 
 } // namespace core

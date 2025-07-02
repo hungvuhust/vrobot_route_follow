@@ -50,6 +50,7 @@ class Straightlink
         static const std::string _id_start;
         static const std::string _id_end;
         static const std::string _map_id;
+        static const std::string _max_velocity;
     };
 
     static const int primaryKeyNumber;
@@ -133,8 +134,17 @@ class Straightlink
     ///Set the value of the column map_id
     void setMapId(const int32_t &pMapId) noexcept;
 
+    /**  For column max_velocity  */
+    ///Get the value of the column max_velocity, returns the default value if the column is null
+    const double &getValueOfMaxVelocity() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<double> &getMaxVelocity() const noexcept;
+    ///Set the value of the column max_velocity
+    void setMaxVelocity(const double &pMaxVelocity) noexcept;
+    void setMaxVelocityToNull() noexcept;
 
-    static size_t getColumnNumber() noexcept {  return 4;  }
+
+    static size_t getColumnNumber() noexcept {  return 5;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -159,6 +169,7 @@ class Straightlink
     std::shared_ptr<int32_t> idStart_;
     std::shared_ptr<int32_t> idEnd_;
     std::shared_ptr<int32_t> mapId_;
+    std::shared_ptr<double> maxVelocity_;
     struct MetaData
     {
         const std::string colName_;
@@ -170,7 +181,7 @@ class Straightlink
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[4]={ false };
+    bool dirtyFlag_[5]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -205,6 +216,11 @@ class Straightlink
             sql += "map_id,";
             ++parametersCount;
         }
+        if(dirtyFlag_[4])
+        {
+            sql += "max_velocity,";
+            ++parametersCount;
+        }
         needSelection=true;
         if(parametersCount > 0)
         {
@@ -229,6 +245,11 @@ class Straightlink
             sql.append(placeholderStr, n);
         }
         if(dirtyFlag_[3])
+        {
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+        }
+        if(dirtyFlag_[4])
         {
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
