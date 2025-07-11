@@ -1,51 +1,24 @@
 #pragma once
+// Database ORM includes
+
+#include "models/Map.h"
+#include "models/Node.h"
+#include "models/Straightlink.h"
+
+// ROS message includes
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/quaternion.hpp>
+#include <nav_msgs/msg/path.hpp>
+#include <rclcpp/time.hpp>
+#include <vrobot_local_planner/msg/path.hpp>
 
 #include "../data_structures/link_info.hpp"
 #include "../data_structures/node_info.hpp"
 #include "../data_structures/rich_path_result.hpp"
+
 #include <memory>
 #include <unordered_map>
 #include <vector>
-
-// Forward declarations for database ORM
-namespace drogon {
-namespace orm {
-class DbClient;
-}
-} // namespace drogon
-
-namespace drogon_model {
-namespace amr_01 {
-namespace amr_ros2 {
-class Node;
-class Straightlink;
-class Map;
-} // namespace amr_ros2
-} // namespace amr_01
-} // namespace drogon_model
-
-// Forward declarations for ROS messages
-namespace nav_msgs {
-namespace msg {
-class Path;
-}
-} // namespace nav_msgs
-
-namespace vrobot_local_planner {
-namespace msg {
-class Path;
-}
-} // namespace vrobot_local_planner
-
-namespace geometry_msgs {
-namespace msg {
-class PoseStamped;
-}
-} // namespace geometry_msgs
-
-namespace rclcpp {
-class Time;
-}
 
 namespace vrobot_route_follow {
 namespace utils {

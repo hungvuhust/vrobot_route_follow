@@ -8,22 +8,9 @@
 #include <string>
 #include <vector>
 
-// Forward declarations for ROS messages
-namespace nav_msgs {
-namespace msg {
-class Path;
-}
-} // namespace nav_msgs
-
-namespace vrobot_local_planner {
-namespace msg {
-class Path;
-}
-} // namespace vrobot_local_planner
-
-namespace rclcpp {
-class Time;
-}
+#include <nav_msgs/msg/path.hpp>
+#include <rclcpp/time.hpp>
+#include <vrobot_local_planner/msg/path.hpp>
 
 namespace vrobot_route_follow {
 namespace data_structures {

@@ -119,8 +119,8 @@ public:
 
 #### 3.1.2 Tạo conversion utilities
 - [x] Tạo `include/vrobot_route_follow/utils/database_converter.hpp`
-- [ ] Implement conversion từ ORM objects sang struct mới (implementation files)
-- [ ] Implement conversion từ struct sang ROS messages (implementation files)
+- [x] Implement conversion từ ORM objects sang struct mới (implementation files)
+- [x] Implement conversion từ struct sang ROS messages (implementation files)
 
 ### 3.2 Phase 2: Tạo RichGraph class (Tuần 2)
 
@@ -227,10 +227,11 @@ public:
 - ✅ **LinkInfo struct**: Chứa tất cả thuộc tính từ database + extended attributes  
 - ✅ **RichPathResult struct**: Kết quả path planning với full traceability
 - ✅ **DatabaseConverter class**: Utilities để convert giữa ORM và structs
+- ✅ **Implementation files**: Tất cả .cpp files và CMakeLists.txt updated
 
 ## 8. Next Steps
 
-1. **Immediate**: Implement các method trong DatabaseConverter
-2. **This week**: Tạo implementation files (.cpp) cho các structs
-3. **Next week**: Implement basic RichGraph với database loading
-4. **Following week**: Port một algorithm đơn giản (Dijkstra) sang rich version 
+1. ✅ **Completed**: Implement các method trong DatabaseConverter
+2. ✅ **Completed**: Tạo implementation files (.cpp) cho các structs
+3. **Next**: Implement basic RichGraph với database loading (Phase 2)
+4. **Following**: Port một algorithm đơn giản (Dijkstra) sang rich version 

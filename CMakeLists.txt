@@ -49,7 +49,10 @@ rosidl_generate_interfaces(
 ament_export_dependencies(rosidl_default_runtime)
 
 find_package(Drogon CONFIG REQUIRED)
-find_package(matplotlib_cpp REQUIRED)
+find_package(Eigen3 REQUIRED)
+
+
+
 
 # ========================================================================
 # ORGANIZED HEADER STRUCTURE
@@ -68,10 +71,18 @@ set(ALGORITHM_HEADERS
   include/vrobot_route_follow/algorithms/scoring.hpp
 )
 
+# Data structure headers
+set(DATA_STRUCTURE_HEADERS
+  include/vrobot_route_follow/data_structures/node_info.hpp
+  include/vrobot_route_follow/data_structures/link_info.hpp
+  include/vrobot_route_follow/data_structures/rich_path_result.hpp
+)
+
 # Utility headers
 set(UTILITY_HEADERS
   include/vrobot_route_follow/utils/nav_conversion.hpp
   include/vrobot_route_follow/utils/visualization.hpp
+  include/vrobot_route_follow/utils/database_converter.hpp
 )
 
 # Main interface headers
@@ -83,6 +94,7 @@ set(INTERFACE_HEADERS
 set(ALL_HEADERS
   ${CORE_HEADERS}
   ${ALGORITHM_HEADERS}
+  ${DATA_STRUCTURE_HEADERS}
   ${UTILITY_HEADERS}
   ${INTERFACE_HEADERS}
 )
@@ -104,10 +116,18 @@ set(ALGORITHM_SOURCES
   src/vrobot_route_follow/algorithms/scoring.cpp
 )
 
+# Data structure implementation files
+set(DATA_STRUCTURE_SOURCES
+  src/vrobot_route_follow/data_structures/node_info.cpp
+  src/vrobot_route_follow/data_structures/link_info.cpp
+  src/vrobot_route_follow/data_structures/rich_path_result.cpp
+)
+
 # Utility implementation files
 set(UTILITY_SOURCES
   src/vrobot_route_follow/utils/nav_conversion.cpp
   src/vrobot_route_follow/utils/visualization.cpp
+  src/vrobot_route_follow/utils/database_converter.cpp
 )
 
 # Main interface implementation
@@ -119,6 +139,7 @@ set(INTERFACE_SOURCES
 set(ALL_SOURCES
   ${CORE_SOURCES}
   ${ALGORITHM_SOURCES}
+  ${DATA_STRUCTURE_SOURCES}
   ${UTILITY_SOURCES}
   ${INTERFACE_SOURCES}
 )
@@ -133,10 +154,18 @@ aux_source_directory(models MODEL_SRC)
 # LIBRARY SETUP
 # ========================================================================
 
+include_directories(
+        include
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${EIGEN3_INCLUDE_DIR}
+)
+
+
 # Create library with separated interface and implementation
 add_library(mrpt_graph_pose_lib SHARED
   ${ALL_SOURCES}
   ${ALL_HEADERS}
+  ${MODEL_SRC}
 )
 
 target_include_directories(mrpt_graph_pose_lib
@@ -145,9 +174,11 @@ target_include_directories(mrpt_graph_pose_lib
     $<INSTALL_INTERFACE:include>
   PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/models
 )
 
 target_link_libraries(mrpt_graph_pose_lib
+    Drogon::Drogon
     mrpt::maps
     mrpt::math
     mrpt::ros2bridge
@@ -169,34 +200,7 @@ target_include_directories(mrpt_graph_pose_headers
     $<INSTALL_INTERFACE:include>
 )
 
-# ========================================================================
-# EXECUTABLE SETUP
-# ========================================================================
 
-include_directories(
-  include
-  ${Drogon_INCLUDE_DIRS}
-  ${matplotlib_cpp_INCLUDE_DIRS}
-)
-
-add_executable(
-  test_readdb
-  ${READDBR_SRC}
-  ${MODEL_SRC}
-)
-
-target_include_directories(test_readdb
-  PRIVATE 
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/models
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-target_link_libraries(test_readdb
-  Drogon::Drogon
-  mrpt_graph_pose_lib
-  matplotlib_cpp::matplotlib_cpp
-)
 
 # ========================================================================
 # PATH PLANNING SERVICE
@@ -265,7 +269,6 @@ target_link_libraries(move_to_pose_action_server
   Drogon::Drogon
   mrpt_graph_pose_lib
 )
-
 ament_target_dependencies(move_to_pose_action_server
   ${THIS_PACKAGE_DEPENDENCIES}
 )
@@ -327,7 +330,7 @@ install(
 
 # Install executables
 install(
-  TARGETS test_readdb path_planning_service test_path_planning_client move_to_pose_action_server test_move_to_pose_client
+  TARGETS path_planning_service test_path_planning_client move_to_pose_action_server test_move_to_pose_client
   DESTINATION lib/${PROJECT_NAME}
 )
 
