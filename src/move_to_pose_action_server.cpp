@@ -38,6 +38,7 @@ using namespace drogon::orm;
 using namespace mrpt::poses;
 using namespace mrpt::graphs;
 using namespace std::placeholders;
+using namespace drogon_model::amr_01;
 
 class MoveToPoseActionServer : public rclcpp::Node {
 private:
@@ -124,8 +125,8 @@ private:
       Mapper<drogon_model::amr_01::amr_ros2::Map>  mapperMaps(db_client_);
 
       // Find map by name
-      auto maps = mapperMaps.findBy(
-          Criteria("map_name", CompareOperator::EQ, map_name));
+      auto maps = mapperMaps.findBy(Criteria(amr_ros2::Map::Cols::_map_name,
+                                             CompareOperator::EQ, map_name));
       if (maps.empty()) {
         throw std::runtime_error("Map " + map_name + " not found");
       }
@@ -133,10 +134,11 @@ private:
       auto map_id_value = *map_record.getIdMap();
 
       // Load links and nodes
-      auto links = mapperLinks.findBy(
-          Criteria("map_id", CompareOperator::EQ, map_id_value));
-      auto nodes = mapperNodes.findBy(
-          Criteria("map_id", CompareOperator::EQ, map_id_value));
+      auto links =
+          mapperLinks.findBy(Criteria(amr_ros2::Straightlink::Cols::_map_id,
+                                      CompareOperator::EQ, map_id_value));
+      auto nodes = mapperNodes.findBy(Criteria(
+          amr_ros2::Node::Cols::_map_id, CompareOperator::EQ, map_id_value));
 
       if (links.empty() || nodes.empty()) {
         throw std::runtime_error("No data found in database for map: " +
@@ -193,11 +195,12 @@ private:
       std::shared_ptr<const vrobot_route_follow::action::MoveToPose::Goal>
           goal) {
 
-    RCLCPP_INFO(
-        this->get_logger(),
-        "Received goal: map=%s, target_node=%lu, current_pose=(%f,%f,%f)",
-        goal->map_name.c_str(), goal->target_node_id, goal->current_pose.x,
-        goal->current_pose.y, goal->current_pose.theta);
+    RCLCPP_INFO(this->get_logger(),
+                "Received goal: map=%s, target_node=%lu, target_pose_name=%s, "
+                "current_pose=(%f,%f,%f)",
+                goal->map_name.c_str(), goal->target_node_id,
+                goal->target_pose_name.c_str(), goal->current_pose.x,
+                goal->current_pose.y, goal->current_pose.theta);
 
     // Check if follow path action is available
     if (!v_follow_path_client_->wait_for_action_server(
@@ -254,10 +257,48 @@ private:
         return;
       }
 
+      RCLCPP_INFO(this->get_logger(),
+                  "Target pose name: %s, target node id: %lu",
+                  goal->target_pose_name.c_str(), goal->target_node_id);
+
+      auto                   target_node_id = goal->target_node_id;
+      Mapper<amr_ros2::Node> mapperNodes(db_client_);
+      Mapper<amr_ros2::Map>  mapperMaps(db_client_);
+
+      // Find map by name
+      auto maps = mapperMaps.findBy(Criteria(
+          amr_ros2::Map::Cols::_map_name, CompareOperator::EQ, goal->map_name));
+      if (maps.empty()) {
+        throw std::runtime_error("Map " + goal->map_name + " not found");
+      }
+      auto map_record   = maps[0];
+      auto map_id_value = *map_record.getIdMap();
+
+      // Check if node name is in database with name and map_id
+      if (goal->target_pose_name != "") {
+        auto nodes = mapperNodes.findBy(
+            Criteria(amr_ros2::Node::Cols::_map_id, // Column map_id
+                     CompareOperator::EQ,           // Equal
+                     map_id_value                   // Value 
+                     ) &&
+            Criteria(amr_ros2::Node::Cols::_node_name, // Column node_name
+                     CompareOperator::EQ,              // Equal
+                     goal->target_pose_name            // Value 
+                     ));
+
+        if (nodes.empty()) {
+          result->success       = false;
+          result->error_message = "Target node name not found in database";
+          goal_handle->abort(result);
+          return;
+        }
+        target_node_id = *nodes[0].getId();
+      }
+
       // Check if target node exists
-      if (nodes_poses_.find(goal->target_node_id) == nodes_poses_.end()) {
+      if (nodes_poses_.find(target_node_id) == nodes_poses_.end()) {
         result->success       = false;
-        result->error_message = "Target node not found in graph";
+        result->error_message = "Target node id not found in graph";
         goal_handle->abort(result);
         return;
       }
@@ -277,7 +318,7 @@ private:
 
       // Thực hiện path planning
       auto planning_result =
-          graph_->planPath(currentPose, goal->target_node_id, config);
+          graph_->planPath(currentPose, target_node_id, config);
 
       if (!planning_result.success) {
         result->success = false;
@@ -304,7 +345,6 @@ private:
       // Step 3: Follow từng path segment một cách tuần tự
       executePathSegments(goal_handle, path_segments, total_refined_distance,
                           start_time);
-
     } catch (const std::exception &e) {
       result->success       = false;
       result->error_message = std::string("Exception: ") + e.what();

@@ -40,7 +40,8 @@ public:
     is_pose_received = true;
   }
 
-  void send_goal(const std::string &map_name, uint64_t target_node_id) {
+  void send_goal(const std::string &map_name, uint64_t target_node_id = -1,
+                 const std::string &target_pose_name = "") {
     is_pose_received = false;
     // Chờ action server
     if (!action_client_->wait_for_action_server(std::chrono::seconds(10))) {
@@ -58,6 +59,7 @@ public:
     auto goal_msg               = MoveToPose::Goal();
     goal_msg.map_name           = map_name;
     goal_msg.target_node_id     = target_node_id;
+    goal_msg.target_pose_name   = target_pose_name;
     goal_msg.current_pose.x     = x;
     goal_msg.current_pose.y     = y;
     goal_msg.current_pose.theta = theta;
@@ -127,19 +129,27 @@ int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
 
   if (argc != 3) {
-    std::cout << "Usage: test_move_to_pose_client <map_name> <target_node_id> "
+    std::cout << "Usage: test_move_to_pose_client <map_name> "
+                 "<target_node_id>/<target_pose_name>"
               << std::endl;
-    std::cout << "Example: test_move_to_pose_client map1 123" << std::endl;
+    std::cout << "Example: test_to_pose_client map1 123" << std::endl;
     return 1;
   }
 
-  std::string map_name       = argv[1];
-  uint64_t    target_node_id = std::stoull(argv[2]);
+  std::string map_name         = argv[1];
+  uint64_t    target_node_id   = -1;
+  std::string target_pose_name = "";
+  try {
+    target_node_id = std::stoull(argv[2]);
+  } catch (const std::invalid_argument &e) {
+    target_pose_name = argv[2];
+  }
 
   auto client = std::make_shared<MoveToPoseClient>();
-
+  RCLCPP_INFO(client->get_logger(), "Target pose name: %s, target node id: %lu",
+              target_pose_name.c_str(), target_node_id);
   // Gửi goal
-  client->send_goal(map_name, target_node_id);
+  client->send_goal(map_name, target_node_id, target_pose_name);
 
   // Spin để nhận callbacks
   rclcpp::spin(client);

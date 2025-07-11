@@ -1,6 +1,7 @@
 # Goal: tham số đầu vào để di chuyển đến pose
 string map_name
 uint64 target_node_id
+string target_pose_name
 geometry_msgs/Pose2D current_pose
 ---
 # Result: kết quả cuối cùng
