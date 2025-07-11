@@ -76,6 +76,8 @@ set(DATA_STRUCTURE_HEADERS
   include/vrobot_route_follow/data_structures/node_info.hpp
   include/vrobot_route_follow/data_structures/link_info.hpp
   include/vrobot_route_follow/data_structures/rich_path_result.hpp
+  include/vrobot_route_follow/data_structures/path_attributes.hpp
+  include/vrobot_route_follow/data_structures/enhanced_path_segment.hpp
 )
 
 # Utility headers
@@ -83,6 +85,7 @@ set(UTILITY_HEADERS
   include/vrobot_route_follow/utils/nav_conversion.hpp
   include/vrobot_route_follow/utils/visualization.hpp
   include/vrobot_route_follow/utils/database_converter.hpp
+  include/vrobot_route_follow/utils/vpath_builder.hpp
 )
 
 # Main interface headers
@@ -121,6 +124,8 @@ set(DATA_STRUCTURE_SOURCES
   src/vrobot_route_follow/data_structures/node_info.cpp
   src/vrobot_route_follow/data_structures/link_info.cpp
   src/vrobot_route_follow/data_structures/rich_path_result.cpp
+  src/vrobot_route_follow/data_structures/path_attributes.cpp
+  src/vrobot_route_follow/data_structures/enhanced_path_segment.cpp
 )
 
 # Utility implementation files
@@ -128,6 +133,7 @@ set(UTILITY_SOURCES
   src/vrobot_route_follow/utils/nav_conversion.cpp
   src/vrobot_route_follow/utils/visualization.cpp
   src/vrobot_route_follow/utils/database_converter.cpp
+  src/vrobot_route_follow/utils/vpath_builder.cpp
 )
 
 # Main interface implementation

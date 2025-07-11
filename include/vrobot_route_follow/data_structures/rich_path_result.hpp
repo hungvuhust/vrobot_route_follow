@@ -12,6 +12,13 @@
 #include <rclcpp/time.hpp>
 #include <vrobot_local_planner/msg/path.hpp>
 
+// Forward declaration to avoid circular dependency
+namespace vrobot_route_follow {
+namespace data_structures {
+  struct EnhancedPathSegment;
+}
+}
+
 namespace vrobot_route_follow {
 namespace data_structures {
 
@@ -208,9 +215,15 @@ struct RichPathResult {
 
   /**
    * @brief Convert to vrobot_local_planner::Path
+   * NOTE: Implementation moved to VPathBuilder for better flexibility
    */
   vrobot_local_planner::msg::Path toVPath(const std::string  &frame_id,
                                           const rclcpp::Time &timestamp) const;
+
+  /**
+   * @brief Convert to enhanced path segments with rich attributes
+   */
+  std::vector<data_structures::EnhancedPathSegment> toEnhancedSegments() const;
 
   // ========================================================================
   // ANALYSIS METHODS
