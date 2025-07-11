@@ -63,6 +63,7 @@ set(CORE_HEADERS
   include/vrobot_route_follow/core/graph_base.hpp
   include/vrobot_route_follow/core/geometric_utils.hpp
   include/vrobot_route_follow/core/pathfinding.hpp
+  include/vrobot_route_follow/core/rich_graph.hpp
 )
 
 # Algorithm headers
@@ -111,6 +112,7 @@ set(CORE_SOURCES
   src/vrobot_route_follow/core/graph_base.cpp
   src/vrobot_route_follow/core/geometric_utils.cpp
   src/vrobot_route_follow/core/pathfinding.cpp
+  src/vrobot_route_follow/core/rich_graph.cpp
 )
 
 # Algorithm implementation files
