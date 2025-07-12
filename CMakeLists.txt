@@ -70,6 +70,9 @@ set(CORE_HEADERS
 set(ALGORITHM_HEADERS
   include/vrobot_route_follow/algorithms/link_based_planner.hpp
   include/vrobot_route_follow/algorithms/scoring.hpp
+  include/vrobot_route_follow/algorithms/rich_pathfinding.hpp
+  include/vrobot_route_follow/algorithms/rich_link_based_planner.hpp
+  include/vrobot_route_follow/algorithms/algorithm_interface.hpp
 )
 
 # Data structure headers
@@ -119,6 +122,9 @@ set(CORE_SOURCES
 set(ALGORITHM_SOURCES
   src/vrobot_route_follow/algorithms/link_based_planner.cpp
   src/vrobot_route_follow/algorithms/scoring.cpp
+  src/vrobot_route_follow/algorithms/rich_pathfinding.cpp
+  src/vrobot_route_follow/algorithms/rich_link_based_planner.cpp
+  src/vrobot_route_follow/algorithms/algorithm_interface.cpp
 )
 
 # Data structure implementation files

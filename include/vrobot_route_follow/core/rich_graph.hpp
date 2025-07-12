@@ -10,6 +10,9 @@
 #include <Eigen/Dense>
 #include <drogon/orm/DbClient.h>
 
+#include "vrobot_route_follow/algorithms/algorithm_interface.hpp"
+#include "vrobot_route_follow/algorithms/rich_link_based_planner.hpp"
+#include "vrobot_route_follow/algorithms/rich_pathfinding.hpp"
 #include "vrobot_route_follow/data_structures/link_info.hpp"
 #include "vrobot_route_follow/data_structures/node_info.hpp"
 #include "vrobot_route_follow/data_structures/rich_path_result.hpp"
@@ -20,6 +23,14 @@ using vrobot_route_follow::data_structures::RichPathResult;
 
 namespace vrobot_route_follow {
 
+// Forward declarations
+namespace algorithms {
+class AlgorithmManager;
+class RichPathfinding;
+class RichLinkBasedPlanner;
+} // namespace algorithms
+
+// Legacy PlanningConfig for backward compatibility
 struct PlanningConfig {
   // Algorithm selection
   enum class Algorithm { DIJKSTRA, A_STAR, DIRECT_PATH, LINK_BASED };
@@ -48,9 +59,12 @@ struct PlanningConfig {
   // Custom scoring function
   std::function<double(const LinkInfo &, const NodeInfo &, const NodeInfo &)>
       custom_scorer = nullptr;
+
+  // Convert to new AlgorithmConfig
+  algorithms::AlgorithmConfig toAlgorithmConfig() const;
 };
 
-class RichGraph {
+class RichGraph : public algorithms::GraphDataInterface {
 private:
   // Core data structures
   std::unordered_map<int32_t, NodeInfo> nodes_;
@@ -68,16 +82,24 @@ private:
   std::string                            current_map_name_;
   int32_t                                current_map_id_ = -1;
 
+  // Algorithm modules
+  std::unique_ptr<algorithms::AlgorithmManager>     algorithm_manager_;
+  std::shared_ptr<algorithms::RichPathfinding>      pathfinding_;
+  std::shared_ptr<algorithms::RichLinkBasedPlanner> link_planner_;
+
   // Internal helper methods
-  void   buildAdjacencyList();
-  void   invalidateCache();
+  void buildAdjacencyList();
+  void invalidateCache();
+  void initializeAlgorithmModules();
+
+  // Legacy algorithm methods (for backward compatibility)
   double calculateHeuristic(const NodeInfo &current, const NodeInfo &goal,
                             PlanningConfig::Algorithm algorithm) const;
   std::vector<int32_t>
   reconstructPath(const std::unordered_map<int32_t, int32_t> &parent,
                   int32_t                                     goal_node) const;
 
-  // Path planning algorithms
+  // Legacy path planning methods (delegated to new modules)
   RichPathResult planDijkstra(int32_t start_node, int32_t target_node,
                               const PlanningConfig &config) const;
   RichPathResult planAStar(int32_t start_node, int32_t target_node,
@@ -107,19 +129,19 @@ public:
   int32_t            getCurrentMapId() const { return current_map_id_; }
 
   // Node operations
-  bool                    hasNode(int32_t node_id) const;
-  const NodeInfo         &getNode(int32_t node_id) const;
+  bool                    hasNode(int32_t node_id) const override;
+  const NodeInfo         &getNode(int32_t node_id) const override;
   std::optional<NodeInfo> getNodeSafe(int32_t node_id) const;
-  std::vector<int32_t>    getAllNodeIds() const;
+  std::vector<int32_t>    getAllNodeIds() const override;
 
   // Link operations
-  bool                    hasLink(int32_t link_id) const;
-  const LinkInfo         &getLink(int32_t link_id) const;
+  bool                    hasLink(int32_t link_id) const override;
+  const LinkInfo         &getLink(int32_t link_id) const override;
   std::optional<LinkInfo> getLinkSafe(int32_t link_id) const;
   std::vector<int32_t>    getAllLinkIds() const;
 
   // Graph topology queries
-  std::vector<int32_t> getNodeNeighborLinks(int32_t node_id) const;
+  std::vector<int32_t> getNodeNeighborLinks(int32_t node_id) const override;
   std::vector<int32_t> getNodeIncomingLinks(int32_t node_id) const;
   std::vector<int32_t> getNodeOutgoingLinks(int32_t node_id) const;
   std::vector<int32_t> getConnectedNodes(int32_t node_id) const;
@@ -128,7 +150,7 @@ public:
                                              int32_t end_node) const;
 
   // Geometric queries
-  int32_t              findClosestNode(const Eigen::Vector3d &pose) const;
+  int32_t findClosestNode(const Eigen::Vector3d &pose) const override;
   std::vector<int32_t> findClosestNodes(const Eigen::Vector3d &pose,
                                         size_t                 max_nodes) const;
   int32_t              findClosestLink(const Eigen::Vector3d &pose) const;
@@ -141,7 +163,7 @@ public:
   double getDistanceToNode(const Eigen::Vector3d &pose, int32_t node_id) const;
   double getDistanceToLink(const Eigen::Vector3d &pose, int32_t link_id) const;
 
-  // Path planning
+  // Path planning (legacy interface)
   RichPathResult
   planPath(const Eigen::Vector3d &start_pose, int32_t target_node_id,
            const PlanningConfig &config = PlanningConfig{}) const;
@@ -152,6 +174,30 @@ public:
   planPath(const Eigen::Vector3d &start_pose,
            const Eigen::Vector3d &target_pose,
            const PlanningConfig  &config = PlanningConfig{}) const;
+
+  // New algorithm interface methods
+  RichPathResult
+  planPathWithAlgorithm(const std::string                 &algorithm_name,
+                        const Eigen::Vector3d             &start_pose,
+                        int32_t                            target_node_id,
+                        const algorithms::AlgorithmConfig &config =
+                            algorithms::AlgorithmConfig{}) const;
+  RichPathResult
+  planPathWithAlgorithm(const std::string &algorithm_name,
+                        int32_t start_node_id, int32_t target_node_id,
+                        const algorithms::AlgorithmConfig &config =
+                            algorithms::AlgorithmConfig{}) const;
+  RichPathResult
+  planPathWithAlgorithm(const std::string                 &algorithm_name,
+                        const Eigen::Vector3d             &start_pose,
+                        const Eigen::Vector3d             &target_pose,
+                        const algorithms::AlgorithmConfig &config =
+                            algorithms::AlgorithmConfig{}) const;
+
+  // Algorithm management
+  std::vector<std::string> getAvailableAlgorithms() const;
+  std::string              getRecommendedAlgorithm(size_t graph_size = 0) const;
+  algorithms::AlgorithmManager &getAlgorithmManager() const;
 
   // Path validation
   bool   isPathValid(const std::vector<int32_t> &node_sequence) const;
@@ -181,6 +227,10 @@ public:
   // Export/Import for debugging
   bool exportToJson(const std::string &filepath) const;
   bool importFromJson(const std::string &filepath);
+
+  // GraphDataInterface implementation
+  std::vector<int32_t> findNodesInRadius(const Eigen::Vector3d &center,
+                                         double radius) const override;
 };
 
 // Helper functions for pose conversions
