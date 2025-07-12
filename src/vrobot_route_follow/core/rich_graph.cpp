@@ -279,6 +279,20 @@ int32_t RichGraph::findClosestNode(const Eigen::Vector3d &pose) const {
   return closest_node;
 }
 
+std::vector<int32_t> RichGraph::findNodesInRadius(const Eigen::Vector3d &center,
+                                                  double radius) const {
+  std::vector<int32_t> nodes_in_radius;
+
+  for (const auto &[node_id, node] : nodes_) {
+    double distance = getDistanceToNode(center, node_id);
+    if (distance <= radius) {
+      nodes_in_radius.push_back(node_id);
+    }
+  }
+
+  return nodes_in_radius;
+}
+
 std::vector<int32_t> RichGraph::findClosestNodes(const Eigen::Vector3d &pose,
                                                  size_t max_nodes) const {
   std::vector<std::pair<double, int32_t>> node_distances;

@@ -156,6 +156,8 @@ public:
   int32_t              findClosestLink(const Eigen::Vector3d &pose) const;
   std::vector<int32_t> findClosestLinks(const Eigen::Vector3d &pose,
                                         size_t                 max_links) const;
+  std::vector<int32_t> findNodesInRadius(const Eigen::Vector3d &center,
+                                         double radius) const override;
 
   // Distance calculations
   double getNodeDistance(int32_t node1_id, int32_t node2_id) const;
@@ -229,8 +231,6 @@ public:
   bool importFromJson(const std::string &filepath);
 
   // GraphDataInterface implementation
-  std::vector<int32_t> findNodesInRadius(const Eigen::Vector3d &center,
-                                         double radius) const override;
 };
 
 // Helper functions for pose conversions
