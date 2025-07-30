@@ -1,84 +1,67 @@
 #pragma once
 
-#include "../core/graph_base.hpp"
+#include "../data_structures/rich_path_result.hpp"
+#include "../data_structures/node_info.hpp" 
+#include "../data_structures/link_info.hpp"
 #include <geometry_msgs/msg/point.hpp>
-#include <map>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/color_rgba.hpp>
 #include <tf2/LinearMath/Quaternion.h>
 #include <visualization_msgs/msg/marker.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
+#include <unordered_map>
 
 namespace vrobot_route_follow {
 namespace utils {
 
+
+
+// ========================================================================
+// MODULAR ARCHITECTURE VISUALIZATION
+// ========================================================================
+
 /**
- * @brief Visualization utilities for ROS2 MarkerArray and MRPT
- * @tparam NodeID Type for node identifiers
- * @tparam Pose2D Type for 2D poses
- * @tparam WeightType Type for edge weights
+ * @brief Rich visualization utilities for the new modular architecture
  */
-template <typename NodeID, typename Pose2D = CPose2D,
-          typename WeightType = double>
-class Visualization
-    : public virtual core::GraphBase<NodeID, Pose2D, WeightType> {
+class RichVisualization {
 public:
-  using Base        = core::GraphBase<NodeID, Pose2D, WeightType>;
-  using PathSegment = std::pair<Pose2D, Pose2D>;
-
-  // ========================================================================
-  // ROS2 MARKER ARRAY VISUALIZATION
-  // ========================================================================
-
   /**
-   * @brief Convert graph to ROS2 MarkerArray for visualization
-   * @param frameId Frame ID for markers
+   * @brief Create visualization markers for RichPathResult
+   * @param rich_result RichPathResult to visualize
+   * @param frame_id Frame ID for markers
    * @param timestamp Timestamp for markers
-   * @param nodeScale Scale factor for node markers
-   * @param edgeScale Scale factor for edge markers
-   * @param showNodeLabels Whether to show node ID labels
-   * @param showLinkDirections Whether to show link direction arrows
+   * @param show_nodes Whether to show node markers
+   * @param show_links Whether to show link markers
+   * @param show_poses Whether to show pose sequence
+   * @param show_velocity Whether to show velocity profile
    * @return ROS2 MarkerArray message
    */
-  visualization_msgs::msg::MarkerArray
-  toMarkerArray(const std::string &frameId, const rclcpp::Time &timestamp,
-                double nodeScale = 0.1, double edgeScale = 0.05,
-                bool showNodeLabels     = true,
-                bool showLinkDirections = true) const;
+  static visualization_msgs::msg::MarkerArray createRichPathMarkers(
+      const vrobot_route_follow::data_structures::RichPathResult& rich_result,
+      const std::string& frame_id,
+      const rclcpp::Time& timestamp,
+      bool show_nodes = true,
+      bool show_links = true, 
+      bool show_poses = true,
+      bool show_velocity = false);
 
   /**
-   * @brief Create path visualization markers
-   * @param pathSegments Path segments to visualize
-   * @param frameId Frame ID for markers
+   * @brief Create visualization markers for map data
+   * @param nodes Map nodes to visualize
+   * @param links Map links to visualize  
+   * @param frame_id Frame ID for markers
    * @param timestamp Timestamp for markers
-   * @param pathColor Color for path visualization
-   * @param lineWidth Width of path lines
-   * @return ROS2 MarkerArray for path
+   * @param node_scale Scale for node markers
+   * @param link_scale Scale for link markers
+   * @return ROS2 MarkerArray message
    */
-  visualization_msgs::msg::MarkerArray createPathMarkers(
-      const std::vector<PathSegment> &pathSegments, const std::string &frameId,
-      const rclcpp::Time             &timestamp,
-      const std_msgs::msg::ColorRGBA &pathColor = createColor(0.0, 0.0, 1.0,
-                                                              1.0),
-      double                          lineWidth = 0.1) const;
-
-  /**
-   * @brief Create multi-colored path visualization for different segments
-   * @param coloredSegments Path segments with types and colors
-   * @param frameId Frame ID for markers
-   * @param timestamp Timestamp for markers
-   * @param lineWidth Width of path lines
-   * @return ROS2 MarkerArray for colored path
-   */
-  visualization_msgs::msg::MarkerArray createColoredPathMarkers(
-      const std::vector<std::tuple<PathSegment, std::string,
-                                   std_msgs::msg::ColorRGBA>> &coloredSegments,
-      const std::string &frameId, const rclcpp::Time &timestamp,
-      double lineWidth = 0.1) const;
-
-  // ========================================================================
-  // UTILITY FUNCTIONS
-  // ========================================================================
+  static visualization_msgs::msg::MarkerArray createMapMarkers(
+      const std::unordered_map<int32_t, vrobot_route_follow::data_structures::NodeInfo>& nodes,
+      const std::unordered_map<int32_t, vrobot_route_follow::data_structures::LinkInfo>& links,
+      const std::string& frame_id,
+      const rclcpp::Time& timestamp,
+      double node_scale = 0.1,
+      double link_scale = 0.05);
 
   /**
    * @brief Create color message
@@ -88,40 +71,17 @@ public:
    * @param a Alpha component (0-1)
    * @return Color message
    */
-  static std_msgs::msg::ColorRGBA createColor(double r, double g, double b,
-                                              double a = 1.0);
-
-  /**
-   * @brief Get predefined colors for different path segments
-   * @return Map of segment types to colors
-   */
-  static std::map<std::string, std_msgs::msg::ColorRGBA> getSegmentColors();
+  static std_msgs::msg::ColorRGBA createColor(double r, double g, double b, double a = 1.0);
 
   /**
    * @brief Clear all visualization markers
-   * @param frameId Frame ID for markers
+   * @param frame_id Frame ID for markers
    * @param timestamp Timestamp for markers
-   * @return MarkerArray with DELETE_ALL action
+   * @return Clear markers array
    */
-  static visualization_msgs::msg::MarkerArray
-  createClearMarkers(const std::string &frameId, const rclcpp::Time &timestamp);
-
-  // ========================================================================
-  // ANALYSIS VISUALIZATION
-  // ========================================================================
-
-  /**
-   * @brief Create markers for link analysis visualization
-   * @param queryPose Query pose for analysis
-   * @param closestLinks Links to visualize
-   * @param frameId Frame ID for markers
-   * @param timestamp Timestamp for markers
-   * @return MarkerArray for link analysis
-   */
-  visualization_msgs::msg::MarkerArray createLinkAnalysisMarkers(
-      const Pose2D                                          &queryPose,
-      const std::vector<std::tuple<NodeID, NodeID, double>> &closestLinks,
-      const std::string &frameId, const rclcpp::Time &timestamp) const;
+  static visualization_msgs::msg::MarkerArray createClearMarkers(
+      const std::string& frame_id,
+      const rclcpp::Time& timestamp);
 };
 
 } // namespace utils

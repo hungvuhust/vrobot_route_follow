@@ -8,10 +8,7 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(mrpt-maps REQUIRED)
-find_package(mrpt-math REQUIRED)
-find_package(mrpt-gui REQUIRED)
-find_package(mrpt-ros2bridge REQUIRED)
+
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
@@ -60,16 +57,16 @@ find_package(Eigen3 REQUIRED)
 
 # Core headers
 set(CORE_HEADERS
-  include/vrobot_route_follow/core/graph_base.hpp
-  include/vrobot_route_follow/core/geometric_utils.hpp
-  include/vrobot_route_follow/core/pathfinding.hpp
   include/vrobot_route_follow/core/rich_graph.hpp
+  include/vrobot_route_follow/core/rich_geometric_utils.hpp
+  include/vrobot_route_follow/core/rich_database_loader.hpp
+  include/vrobot_route_follow/core/rich_path_planner.hpp
+  include/vrobot_route_follow/core/rich_path_optimizer.hpp
+  include/vrobot_route_follow/core/rich_path_validator.hpp
 )
 
 # Algorithm headers
 set(ALGORITHM_HEADERS
-  include/vrobot_route_follow/algorithms/link_based_planner.hpp
-  include/vrobot_route_follow/algorithms/scoring.hpp
   include/vrobot_route_follow/algorithms/rich_pathfinding.hpp
   include/vrobot_route_follow/algorithms/rich_link_based_planner.hpp
   include/vrobot_route_follow/algorithms/algorithm_interface.hpp
@@ -86,7 +83,6 @@ set(DATA_STRUCTURE_HEADERS
 
 # Utility headers
 set(UTILITY_HEADERS
-  include/vrobot_route_follow/utils/nav_conversion.hpp
   include/vrobot_route_follow/utils/visualization.hpp
   include/vrobot_route_follow/utils/database_converter.hpp
   include/vrobot_route_follow/utils/vpath_builder.hpp
@@ -94,7 +90,6 @@ set(UTILITY_HEADERS
 
 # Main interface headers
 set(INTERFACE_HEADERS
-  include/vrobot_route_follow/graph_pose.hpp
 )
 
 # All headers (legacy headers removed)
@@ -112,16 +107,16 @@ set(ALL_HEADERS
 
 # Core implementation files
 set(CORE_SOURCES
-  src/vrobot_route_follow/core/graph_base.cpp
-  src/vrobot_route_follow/core/geometric_utils.cpp
-  src/vrobot_route_follow/core/pathfinding.cpp
   src/vrobot_route_follow/core/rich_graph.cpp
+  # src/vrobot_route_follow/core/rich_geometric_utils.cpp
+  src/vrobot_route_follow/core/rich_database_loader.cpp
+  src/vrobot_route_follow/core/rich_path_planner.cpp
+  src/vrobot_route_follow/core/rich_path_optimizer.cpp
+  src/vrobot_route_follow/core/rich_path_validator.cpp
 )
 
 # Algorithm implementation files
 set(ALGORITHM_SOURCES
-  src/vrobot_route_follow/algorithms/link_based_planner.cpp
-  src/vrobot_route_follow/algorithms/scoring.cpp
   src/vrobot_route_follow/algorithms/rich_pathfinding.cpp
   src/vrobot_route_follow/algorithms/rich_link_based_planner.cpp
   src/vrobot_route_follow/algorithms/algorithm_interface.cpp
@@ -138,7 +133,6 @@ set(DATA_STRUCTURE_SOURCES
 
 # Utility implementation files
 set(UTILITY_SOURCES
-  src/vrobot_route_follow/utils/nav_conversion.cpp
   src/vrobot_route_follow/utils/visualization.cpp
   src/vrobot_route_follow/utils/database_converter.cpp
   src/vrobot_route_follow/utils/vpath_builder.cpp
@@ -146,7 +140,6 @@ set(UTILITY_SOURCES
 
 # Main interface implementation
 set(INTERFACE_SOURCES
-  src/vrobot_route_follow/graph_pose.cpp
 )
 
 # All implementation sources
@@ -155,12 +148,9 @@ set(ALL_SOURCES
   ${ALGORITHM_SOURCES}
   ${DATA_STRUCTURE_SOURCES}
   ${UTILITY_SOURCES}
-  ${INTERFACE_SOURCES}
 )
 
-set(READDBR_SRC
-  src/test_readdb.cpp
-)
+
 
 aux_source_directory(models MODEL_SRC)
 
@@ -175,14 +165,17 @@ include_directories(
 )
 
 
-# Create library with separated interface and implementation
-add_library(mrpt_graph_pose_lib SHARED
-  ${ALL_SOURCES}
+# Create modular architecture library
+add_library(modular_architecture_lib SHARED
+  ${CORE_SOURCES}
+  ${ALGORITHM_SOURCES}
+  ${DATA_STRUCTURE_SOURCES}
+  ${UTILITY_SOURCES}
   ${ALL_HEADERS}
   ${MODEL_SRC}
 )
 
-target_include_directories(mrpt_graph_pose_lib
+target_include_directories(modular_architecture_lib
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
@@ -191,28 +184,19 @@ target_include_directories(mrpt_graph_pose_lib
     ${CMAKE_CURRENT_SOURCE_DIR}/models
 )
 
-target_link_libraries(mrpt_graph_pose_lib
+target_link_libraries(modular_architecture_lib
     Drogon::Drogon
-    mrpt::maps
-    mrpt::math
-    mrpt::ros2bridge
-    mrpt::gui
+    Eigen3::Eigen
 )
 
-ament_target_dependencies(mrpt_graph_pose_lib
+ament_target_dependencies(modular_architecture_lib
     ${THIS_PACKAGE_DEPENDENCIES}
 )
-rosidl_target_interfaces(mrpt_graph_pose_lib
+rosidl_target_interfaces(modular_architecture_lib
   ${PROJECT_NAME} "rosidl_typesupport_cpp"
 )
 
-# Create header-only library for backward compatibility
-add_library(mrpt_graph_pose_headers INTERFACE)
-target_include_directories(mrpt_graph_pose_headers
-  INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
+
 
 
 
@@ -234,7 +218,7 @@ target_include_directories(path_planning_service PRIVATE
 
 target_link_libraries(path_planning_service
   Drogon::Drogon
-  mrpt_graph_pose_lib
+  modular_architecture_lib
 )
 
 ament_target_dependencies(path_planning_service
@@ -256,7 +240,7 @@ target_include_directories(test_path_planning_client
 )
 
 target_link_libraries(test_path_planning_client
-  mrpt_graph_pose_lib
+  modular_architecture_lib
 )
 
 ament_target_dependencies(test_path_planning_client
@@ -281,7 +265,7 @@ target_include_directories(move_to_pose_action_server PRIVATE
 
 target_link_libraries(move_to_pose_action_server
   Drogon::Drogon
-  mrpt_graph_pose_lib
+  modular_architecture_lib
 )
 ament_target_dependencies(move_to_pose_action_server
   ${THIS_PACKAGE_DEPENDENCIES}
@@ -303,7 +287,7 @@ target_include_directories(test_move_to_pose_client
 )
 
 target_link_libraries(test_move_to_pose_client
-  mrpt_graph_pose_lib
+  modular_architecture_lib
 )
 
 ament_target_dependencies(test_move_to_pose_client
@@ -327,8 +311,8 @@ install(
 
 # Install library
 install(
-  TARGETS mrpt_graph_pose_lib mrpt_graph_pose_headers
-  EXPORT mrpt_graph_pose_libTargets
+  TARGETS modular_architecture_lib 
+  EXPORT modular_architecture_libTargets
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
@@ -336,10 +320,10 @@ install(
 )
 
 install( 
-  EXPORT mrpt_graph_pose_libTargets
-  FILE mrpt_graph_pose_libTargets.cmake
-  NAMESPACE mrpt_graph_pose_lib::
-  DESTINATION lib/cmake/mrpt_graph_pose_lib
+  EXPORT modular_architecture_libTargets
+  FILE modular_architecture_libTargets.cmake
+  NAMESPACE modular_architecture_lib::
+  DESTINATION lib/cmake/modular_architecture_lib
 )
 
 # Install executables
@@ -352,7 +336,7 @@ install(
 # PACKAGE CONFIGURATION
 # ========================================================================
 
-ament_export_targets(mrpt_graph_pose_libTargets HAS_LIBRARY_TARGET)
+ament_export_targets(modular_architecture_libTargets HAS_LIBRARY_TARGET)
 ament_export_dependencies(${THIS_PACKAGE_DEPENDENCIES})
 
 
