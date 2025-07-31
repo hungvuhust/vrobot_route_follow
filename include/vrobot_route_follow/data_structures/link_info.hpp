@@ -36,6 +36,7 @@ struct LinkInfo {
   // Extended attributes for future use
   std::optional<std::string> link_type;
   std::optional<double>      width;
+  std::optional<double>      distance;
   std::optional<bool>        bidirectional;
   std::optional<double>      min_velocity;
   std::optional<std::string> traffic_direction; // "forward", "backward", "both"

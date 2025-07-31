@@ -76,6 +76,13 @@ const std::unordered_map<int32_t, LinkInfo>& RichDatabaseLoader::getLinks() cons
     return *current_links_;
 }
 
+const std::unordered_map<int32_t, CurveLinkInfo>& RichDatabaseLoader::getCurvedLinks() const {
+    if (!current_curved_links_) {
+        throw std::runtime_error("No map data loaded. Call loadMap() first.");
+    }
+    return *current_curved_links_;
+}
+
 const std::unordered_map<int32_t, std::vector<int32_t>>& RichDatabaseLoader::getAdjacencyList() const {
     if (!current_adjacency_list_) {
         throw std::runtime_error("No map data loaded. Call loadMap() first.");
@@ -118,6 +125,7 @@ void RichDatabaseLoader::clearAllCache() {
     cache_.clear();
     current_nodes_ = nullptr;
     current_links_ = nullptr;
+    current_curved_links_ = nullptr;
     current_adjacency_list_ = nullptr;
     current_map_name_.clear();
     current_map_id_ = -1;

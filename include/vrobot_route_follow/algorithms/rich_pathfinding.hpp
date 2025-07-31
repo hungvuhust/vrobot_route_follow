@@ -11,10 +11,12 @@
 
 #include "vrobot_route_follow/core/rich_geometric_utils.hpp"
 #include "vrobot_route_follow/data_structures/link_info.hpp"
+#include "vrobot_route_follow/data_structures/curve_link_info.hpp"
 #include "vrobot_route_follow/data_structures/node_info.hpp"
 #include "vrobot_route_follow/data_structures/rich_path_result.hpp"
 
 using vrobot_route_follow::data_structures::LinkInfo;
+using vrobot_route_follow::data_structures::CurveLinkInfo;
 using vrobot_route_follow::data_structures::NodeInfo;
 using vrobot_route_follow::data_structures::RichPathResult;
 

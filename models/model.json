@@ -9,6 +9,7 @@
     "tables": [
         "map",
         "node",
-        "straightlink"
+        "straightlink",
+        "curvelink"
     ]
 }

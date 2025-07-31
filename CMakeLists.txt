@@ -76,6 +76,7 @@ set(ALGORITHM_HEADERS
 set(DATA_STRUCTURE_HEADERS
   include/vrobot_route_follow/data_structures/node_info.hpp
   include/vrobot_route_follow/data_structures/link_info.hpp
+  include/vrobot_route_follow/data_structures/curve_link_info.hpp
   include/vrobot_route_follow/data_structures/rich_path_result.hpp
   include/vrobot_route_follow/data_structures/path_attributes.hpp
   include/vrobot_route_follow/data_structures/enhanced_path_segment.hpp
@@ -126,6 +127,7 @@ set(ALGORITHM_SOURCES
 set(DATA_STRUCTURE_SOURCES
   src/vrobot_route_follow/data_structures/node_info.cpp
   src/vrobot_route_follow/data_structures/link_info.cpp
+  src/vrobot_route_follow/data_structures/curve_link_info.cpp
   src/vrobot_route_follow/data_structures/rich_path_result.cpp
   src/vrobot_route_follow/data_structures/path_attributes.cpp
   src/vrobot_route_follow/data_structures/enhanced_path_segment.cpp
@@ -153,6 +155,8 @@ set(ALL_SOURCES
 
 
 aux_source_directory(models MODEL_SRC)
+# Include Curvelink model
+list(APPEND MODEL_SRC models/Curvelink.cc)
 
 # ========================================================================
 # LIBRARY SETUP

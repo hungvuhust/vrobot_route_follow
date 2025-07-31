@@ -41,15 +41,13 @@ class MoveToPoseActionServer : public rclcpp::Node {
 private:
   rclcpp_action::Server<vrobot_route_follow::action::MoveToPose>::SharedPtr
       action_server_;
-  rclcpp_action::Client<vrobot_local_planner::action::FollowPath>::SharedPtr
-      follow_path_client_;
+
   rclcpp_action::Client<vrobot_local_planner::action::VFollowPath>::SharedPtr
       v_follow_path_client_;
 
   // Database components
   std::shared_ptr<drogon::orm::DbClient> db_client_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_viz_;
-  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher_;
   rclcpp::Publisher<vrobot_local_planner::msg::Path>::SharedPtr
       vpath_publisher_;
 
@@ -66,6 +64,8 @@ private:
 public:
   MoveToPoseActionServer() : Node("move_to_pose_action_server"), map_loaded_(false) {
 
+    RCLCPP_INFO(this->get_logger(), "Move To Pose Action Server is starting...");
+
     // Initialize database client
     initDatabase();
 
@@ -79,17 +79,10 @@ public:
     pub_viz_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
         "graph_vis", rclcpp::QoS(10).transient_local().reliable());
 
-    // Create publisher for path
-    path_publisher_ = this->create_publisher<nav_msgs::msg::Path>(
-        "route_path", rclcpp::QoS(10).transient_local().reliable());
 
     vpath_publisher_ = this->create_publisher<vrobot_local_planner::msg::Path>(
         "route_vpath", rclcpp::QoS(10).transient_local().reliable());
 
-    // Create follow path action client
-    follow_path_client_ =
-        rclcpp_action::create_client<vrobot_local_planner::action::FollowPath>(
-            this, "follow_path");
 
     // Create v follow path action client
     v_follow_path_client_ =
@@ -109,6 +102,9 @@ public:
 
 private:
   void initDatabase() {
+
+    RCLCPP_INFO(this->get_logger(), "Initializing database...");
+
     db_client_ = DbClient::newPgClient(
         "host=127.0.0.1 port=5432 dbname=amr_01 user=amr password=1234512345",
         1);
@@ -142,7 +138,7 @@ private:
       const auto& nodes = database_loader_->getNodes();
       const auto& links = database_loader_->getLinks();
       auto map_markers = RichVisualization::createMapMarkers(
-          nodes, links, "map", this->now(), 0.1, 0.05);
+          nodes, links, database_loader_->getCurvedLinks(), "map", this->now(), 0.1, 0.05);
       pub_viz_->publish(map_markers);
 
     } catch (const std::exception &e) {
@@ -194,7 +190,6 @@ private:
   void handle_accepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<
                            vrobot_route_follow::action::MoveToPose>>
                            goal_handle) {
-
     execute(goal_handle);
   }
 
@@ -343,7 +338,6 @@ private:
           rich_result, "map", this->now());
 
       // Publish paths for visualization
-      path_publisher_->publish(nav_path);
       vpath_publisher_->publish(vpath);
 
       // Validate path before execution
@@ -443,7 +437,7 @@ private:
 
       // Visualize rich path result
       auto rich_path_markers = RichVisualization::createRichPathMarkers(
-          rich_result, "map", this->now(), true, true, true, !rich_result.velocityProfile.empty());
+          rich_result, "map", this->now(), 0.15, 0.05);
       pub_viz_->publish(rich_path_markers);
 
       RCLCPP_INFO(this->get_logger(), 
@@ -463,9 +457,6 @@ private:
     }
   }
 
-
-
-private:
 };
 
 int main(int argc, char **argv) {

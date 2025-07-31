@@ -4,6 +4,7 @@
 #include "models/Map.h"
 #include "models/Node.h"
 #include "models/Straightlink.h"
+#include "models/Curvelink.h"
 
 // ROS message includes
 #include <geometry_msgs/msg/pose_stamped.hpp>
@@ -13,6 +14,7 @@
 #include <vrobot_local_planner/msg/path.hpp>
 
 #include "../data_structures/link_info.hpp"
+#include "../data_structures/curve_link_info.hpp"
 #include "../data_structures/node_info.hpp"
 #include "../data_structures/rich_path_result.hpp"
 
@@ -47,6 +49,12 @@ public:
    */
   static data_structures::LinkInfo
   convertLink(const drogon_model::amr_01::amr_ros2::Straightlink &db_link);
+
+  /**
+   * @brief Convert database Curvelink to CurveLinkInfo
+   */
+  static data_structures::CurveLinkInfo
+  convertCurveLink(const drogon_model::amr_01::amr_ros2::Curvelink &db_curve_link);
 
   /**
    * @brief Convert multiple database nodes to NodeInfo vector

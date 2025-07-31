@@ -13,9 +13,11 @@
 
 #include "vrobot_route_follow/data_structures/node_info.hpp"
 #include "vrobot_route_follow/data_structures/link_info.hpp"
+#include "vrobot_route_follow/data_structures/curve_link_info.hpp"
 
 using vrobot_route_follow::data_structures::NodeInfo;
 using vrobot_route_follow::data_structures::LinkInfo;
+using vrobot_route_follow::data_structures::CurveLinkInfo;
 
 namespace vrobot_route_follow {
 namespace core {
@@ -26,6 +28,7 @@ namespace core {
 struct LoadStatistics {
     size_t nodes_loaded = 0;
     size_t links_loaded = 0;
+    size_t curved_links_loaded = 0;
     std::chrono::milliseconds load_time{0};
     bool cache_hit = false;
     std::string map_name;
@@ -59,6 +62,7 @@ struct DatabaseLoadConfig {
 struct CachedMapData {
     std::unordered_map<int32_t, NodeInfo> nodes;
     std::unordered_map<int32_t, LinkInfo> links;
+    std::unordered_map<int32_t, CurveLinkInfo> curved_links;
     std::unordered_map<int32_t, std::vector<int32_t>> adjacency_list;
     std::chrono::steady_clock::time_point last_accessed;
     std::chrono::steady_clock::time_point loaded_at;
@@ -111,6 +115,12 @@ public:
      * @return Reference to links map
      */
     const std::unordered_map<int32_t, LinkInfo>& getLinks() const;
+
+    /**
+     * @brief Get loaded curved links for current map
+     * @return Reference to curved links map
+     */
+    const std::unordered_map<int32_t, CurveLinkInfo>& getCurvedLinks() const;
 
     /**
      * @brief Get adjacency list for current map
@@ -258,6 +268,7 @@ private:
     // Current data (references to cached data)
     const std::unordered_map<int32_t, NodeInfo>* current_nodes_ = nullptr;
     const std::unordered_map<int32_t, LinkInfo>* current_links_ = nullptr;
+    const std::unordered_map<int32_t, CurveLinkInfo>* current_curved_links_ = nullptr;
     const std::unordered_map<int32_t, std::vector<int32_t>>* current_adjacency_list_ = nullptr;
 };
 

@@ -70,6 +70,32 @@ data_structures::LinkInfo DatabaseConverter::convertLink(
   return link_info;
 }
 
+data_structures::CurveLinkInfo DatabaseConverter::convertCurveLink(
+    const drogon_model::amr_01::amr_ros2::Curvelink &db_curve_link) {
+
+  data_structures::CurveLinkInfo curve_link_info;
+
+  // Basic properties
+  curve_link_info.id_curve_link = db_curve_link.getValueOfIdCurveLink();
+  curve_link_info.id_start = db_curve_link.getValueOfIdStart();
+  curve_link_info.id_end = db_curve_link.getValueOfIdEnd();
+  curve_link_info.map_id = db_curve_link.getValueOfMapId();
+
+  // Bézier control points
+  curve_link_info.control_point_1 = Eigen::Vector2d(
+      db_curve_link.getValueOfControlPoint1X(),
+      db_curve_link.getValueOfControlPoint1Y());
+
+  curve_link_info.control_point_2 = Eigen::Vector2d(
+      db_curve_link.getValueOfControlPoint2X(),
+      db_curve_link.getValueOfControlPoint2Y());
+
+  // Default properties
+  curve_link_info.bidirectional = true;
+
+  return curve_link_info;
+}
+
 std::vector<data_structures::NodeInfo> DatabaseConverter::convertNodes(
     const std::vector<drogon_model::amr_01::amr_ros2::Node> &db_nodes) {
 

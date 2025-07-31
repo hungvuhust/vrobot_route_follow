@@ -1,6 +1,7 @@
 #pragma once
 
 #include "link_info.hpp"
+#include "curve_link_info.hpp"
 #include "node_info.hpp"
 #include <Eigen/Dense>
 #include <map>
@@ -39,6 +40,9 @@ struct RichPathResult {
 
   /// Sequence of links connecting the nodes
   std::vector<LinkInfo> linkSequence;
+
+  /// Sequence of curved links (if any) in the path
+  std::vector<CurveLinkInfo> curvedLinkSequence;
 
   /// Interpolated poses along the path for smooth navigation
   std::vector<Eigen::Vector3d> poseSequence;
