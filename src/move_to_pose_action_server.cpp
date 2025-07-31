@@ -7,8 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
-// Database
-#include <drogon/HttpAppFramework.h>
+// Database - Only ORM, no app framework
 #include <drogon/orm/DbClient.h>
 #include <drogon/orm/Mapper.h>
 
@@ -62,11 +61,13 @@ private:
   bool        map_loaded_;
 
 public:
-  MoveToPoseActionServer()
-      : Node("move_to_pose_action_server"), map_loaded_(false) {
+  explicit MoveToPoseActionServer()
+      : rclcpp::Node("move_to_pose_action_server"), map_loaded_(false) {
 
     RCLCPP_INFO(this->get_logger(),
                 "Move To Pose Action Server is starting...");
+
+    initDatabase();
 
     // Create publisher for visualization
     pub_viz_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
@@ -95,36 +96,25 @@ public:
 
 private:
   void initDatabase() {
-    if (db_client_) {
-      return; // Already initialized
+    RCLCPP_INFO(this->get_logger(), "Initializing database...");
+
+    db_client_ = DbClient::newPgClient(
+        "host=127.0.0.1 port=5432 dbname=amr_01 user=amr password=1234512345",
+        1);
+
+    if (!db_client_) {
+      RCLCPP_ERROR(this->get_logger(), "Cannot connect to database");
+      throw std::runtime_error("Database connection failed");
     }
 
-    RCLCPP_INFO(this->get_logger(), "Initializing database (lazy init)...");
+    // Initialize modular architecture components
+    database_loader_ = std::make_shared<RichDatabaseLoader>(db_client_);
+    path_planner_    = std::make_shared<RichPathPlanner>(database_loader_);
+    path_optimizer_  = std::make_shared<RichPathOptimizer>();
+    path_validator_  = std::make_shared<RichPathValidator>();
 
-    try {
-      // Create database client without starting event loop
-      db_client_ = DbClient::newPgClient(
-          "host=127.0.0.1 port=5432 dbname=amr_01 user=amr password=1234512345",
-          1);
-
-      if (!db_client_) {
-        throw std::runtime_error("Database connection failed");
-      }
-
-      // Initialize modular architecture components after database is ready
-      database_loader_ = std::make_shared<RichDatabaseLoader>(db_client_);
-      path_planner_    = std::make_shared<RichPathPlanner>(database_loader_);
-      path_optimizer_  = std::make_shared<RichPathOptimizer>();
-      path_validator_  = std::make_shared<RichPathValidator>();
-
-      RCLCPP_INFO(this->get_logger(),
-                  "Database and modular components initialized successfully");
-
-    } catch (const std::exception &e) {
-      RCLCPP_ERROR(this->get_logger(), "Database initialization error: %s",
-                   e.what());
-      throw;
-    }
+    RCLCPP_INFO(this->get_logger(),
+                "Database and modular components initialized successfully");
   }
 
   bool loadMapData(const std::string &map_name) {
@@ -219,7 +209,9 @@ private:
 
     try {
       // Step 1: Initialize database if not already done
-      initDatabase();
+      if (!db_client_) {
+        initDatabase();
+      }
 
       // Step 2: Load map data using modular architecture
       RCLCPP_INFO(this->get_logger(), "Loading map data for: %s",
@@ -488,7 +480,6 @@ private:
 };
 
 int main(int argc, char **argv) {
-
   // Initialize ROS2 first
   rclcpp::init(argc, argv);
 

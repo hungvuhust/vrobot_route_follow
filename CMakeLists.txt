@@ -155,8 +155,6 @@ set(ALL_SOURCES
 
 
 aux_source_directory(models MODEL_SRC)
-# Include Curvelink model
-list(APPEND MODEL_SRC models/Curvelink.cc)
 
 # ========================================================================
 # LIBRARY SETUP
