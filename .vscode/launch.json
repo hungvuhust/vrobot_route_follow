@@ -1,0 +1,21 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Move To Pose Action Server",
+            "type": "cppdbg",
+            "request": "launch",
+            "miDebuggerServerAddress": "localhost:3000",
+            "program": "/home/rtc/ros2_ws/build/vrobot_route_follow/move_to_pose_action_server",
+            "args": [
+                "--ros-args",
+                "--log-level",
+                "debug"
+            ],
+            "cwd": "/"
+        }
+    ]
+}

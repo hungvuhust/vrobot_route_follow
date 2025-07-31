@@ -1,14 +1,9 @@
 #include "vrobot_route_follow/core/rich_graph.hpp"
 #include "vrobot_route_follow/utils/database_converter.hpp"
 
-// ORM includes
-#include "models/Map.h"
-#include "models/Node.h"
-#include "models/Straightlink.h"
-#include <drogon/orm/Mapper.h>
-
 #include <algorithm>
 #include <cmath>
+#include <drogon/orm/DbClient.h>
 #include <fstream>
 #include <limits>
 #include <nlohmann/json.hpp>
@@ -26,30 +21,20 @@ std::tuple<double, double, double> eigenToPose(const Eigen::Vector3d &pose) {
   return std::make_tuple(pose.x(), pose.y(), pose.z());
 }
 
-RichGraph::RichGraph(std::shared_ptr<drogon::orm::DbClient> db_client)
-    : db_client_(db_client) {}
+RichGraph::RichGraph(const std::string &connection_info) {
+  db_client_ = drogon::orm::DbClient::newPgClient(connection_info, 1);
+}
 
 bool RichGraph::loadFromDatabase(const std::string &map_name) {
   if (!db_client_) {
     return false;
   }
-  return loadFromDatabase(map_name, db_client_);
-}
-
-bool RichGraph::loadFromDatabase(
-    const std::string                     &map_name,
-    std::shared_ptr<drogon::orm::DbClient> db_client) {
-  if (!db_client) {
-    return false;
-  }
-
-  db_client_ = db_client;
   clear();
 
   try {
     // Use ORM to load map
     drogon::orm::Mapper<drogon_model::amr_01::amr_ros2::Map> mapMapper(
-        db_client);
+        db_client_);
     auto mapCriteria = drogon::orm::Criteria(
         drogon_model::amr_01::amr_ros2::Map::Cols::_map_name,
         drogon::orm::CompareOperator::EQ, map_name);
@@ -64,7 +49,7 @@ bool RichGraph::loadFromDatabase(
 
     // Use ORM to load nodes
     drogon::orm::Mapper<drogon_model::amr_01::amr_ros2::Node> nodeMapper(
-        db_client);
+        db_client_);
     auto nodeCriteria = drogon::orm::Criteria(
         drogon_model::amr_01::amr_ros2::Node::Cols::_map_id,
         drogon::orm::CompareOperator::EQ, current_map_id_);
@@ -78,7 +63,7 @@ bool RichGraph::loadFromDatabase(
 
     // Use ORM to load links
     drogon::orm::Mapper<drogon_model::amr_01::amr_ros2::Straightlink>
-         linkMapper(db_client);
+         linkMapper(db_client_);
     auto linkCriteria = drogon::orm::Criteria(
         drogon_model::amr_01::amr_ros2::Straightlink::Cols::_map_id,
         drogon::orm::CompareOperator::EQ, current_map_id_);

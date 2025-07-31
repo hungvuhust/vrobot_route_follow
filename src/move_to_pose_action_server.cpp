@@ -1,4 +1,6 @@
+#include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <future>
 #include <memory>
 #include <rclcpp/rclcpp.hpp>
@@ -7,16 +9,16 @@
 #include <unordered_map>
 #include <vector>
 
-// Database - Only ORM, no app framework
-#include <drogon/orm/DbClient.h>
-#include <drogon/orm/Mapper.h>
+#include "vrobot_route_follow/utils/simple_action_server.hpp"
 
 // New modular architecture
+#include "vrobot_route_follow/action/detail/move_to_pose__struct.hpp"
 #include "vrobot_route_follow/core/rich_database_loader.hpp"
 #include "vrobot_route_follow/core/rich_path_optimizer.hpp"
 #include "vrobot_route_follow/core/rich_path_planner.hpp"
 #include "vrobot_route_follow/core/rich_path_validator.hpp"
 #include "vrobot_route_follow/utils/database_converter.hpp"
+#include "vrobot_route_follow/utils/simple_action_server.hpp"
 #include "vrobot_route_follow/utils/visualization.hpp"
 
 // Action messages
@@ -32,25 +34,29 @@
 using namespace drogon;
 using namespace drogon::orm;
 using namespace drogon_model::amr_01;
+
 using namespace std::placeholders;
+
 using namespace vrobot_route_follow::core;
 using namespace vrobot_route_follow::utils;
 
 class MoveToPoseActionServer : public rclcpp::Node {
 private:
-  rclcpp_action::Server<vrobot_route_follow::action::MoveToPose>::SharedPtr
-      action_server_;
+  std::shared_ptr<drogon::orm::DbClient> db_client_;
+
+  using Action       = vrobot_route_follow::action::MoveToPose;
+  using ActionServer = vrobot_route_follow::SimpleActionServer<Action>;
+  std::unique_ptr<ActionServer> action_server_;
 
   rclcpp_action::Client<vrobot_local_planner::action::VFollowPath>::SharedPtr
       v_follow_path_client_;
 
   // Database components
-  std::shared_ptr<drogon::orm::DbClient>                             db_client_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_viz_;
   rclcpp::Publisher<vrobot_local_planner::msg::Path>::SharedPtr
       vpath_publisher_;
 
-  // New modular architecture components
+  // New modular architecture components - DISABLED FOR DEBUG
   std::shared_ptr<RichDatabaseLoader> database_loader_;
   std::shared_ptr<RichPathPlanner>    path_planner_;
   std::shared_ptr<RichPathOptimizer>  path_optimizer_;
@@ -60,14 +66,23 @@ private:
   std::string current_map_name_;
   bool        map_loaded_;
 
+  std::chrono::steady_clock::time_point execution_start_time_;
+
 public:
-  explicit MoveToPoseActionServer()
+  explicit MoveToPoseActionServer(const std::string &connection_info)
       : rclcpp::Node("move_to_pose_action_server"), map_loaded_(false) {
+    this->set_parameter(rclcpp::Parameter("use_sim_time", true));
 
     RCLCPP_INFO(this->get_logger(),
                 "Move To Pose Action Server is starting...");
 
-    initDatabase();
+    db_client_ = drogon::orm::DbClient::newPgClient(connection_info, 1);
+
+    // Initialize modular architecture components
+    database_loader_ = std::make_shared<RichDatabaseLoader>(connection_info);
+    path_planner_    = std::make_shared<RichPathPlanner>(database_loader_);
+    path_optimizer_  = std::make_shared<RichPathOptimizer>();
+    path_validator_  = std::make_shared<RichPathValidator>();
 
     // Create publisher for visualization
     pub_viz_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
@@ -81,42 +96,24 @@ public:
         rclcpp_action::create_client<vrobot_local_planner::action::VFollowPath>(
             this, "v_follow_path");
 
-    // Create action server
-    action_server_ =
-        rclcpp_action::create_server<vrobot_route_follow::action::MoveToPose>(
-            this, "move_to_pose",
-            std::bind(&MoveToPoseActionServer::handle_goal, this, _1, _2),
-            std::bind(&MoveToPoseActionServer::handle_cancel, this, _1),
-            std::bind(&MoveToPoseActionServer::handle_accepted, this, _1));
+    // // Create SimpleActionServer
+    action_server_ = std::make_unique<ActionServer>(
+        this, "move_to_pose",
+        std::bind(&MoveToPoseActionServer::executeGoal, this), nullptr,
+        std::chrono::milliseconds(500), true);
 
-    RCLCPP_INFO(this->get_logger(),
-                "Move To Pose Action Server started (database will be "
-                "initialized on first use)");
+    action_server_->activate();
+
+    RCLCPP_INFO(this->get_logger(), "Move To Pose server is initialized");
+  }
+
+  ~MoveToPoseActionServer() {
+    if (action_server_) {
+      action_server_->deactivate();
+    }
   }
 
 private:
-  void initDatabase() {
-    RCLCPP_INFO(this->get_logger(), "Initializing database...");
-
-    db_client_ = DbClient::newPgClient(
-        "host=127.0.0.1 port=5432 dbname=amr_01 user=amr password=1234512345",
-        1);
-
-    if (!db_client_) {
-      RCLCPP_ERROR(this->get_logger(), "Cannot connect to database");
-      throw std::runtime_error("Database connection failed");
-    }
-
-    // Initialize modular architecture components
-    database_loader_ = std::make_shared<RichDatabaseLoader>(db_client_);
-    path_planner_    = std::make_shared<RichPathPlanner>(database_loader_);
-    path_optimizer_  = std::make_shared<RichPathOptimizer>();
-    path_validator_  = std::make_shared<RichPathValidator>();
-
-    RCLCPP_INFO(this->get_logger(),
-                "Database and modular components initialized successfully");
-  }
-
   bool loadMapData(const std::string &map_name) {
     try {
       // Use RichDatabaseLoader to load map data
@@ -136,11 +133,12 @@ private:
           load_stats.cache_hit ? "true" : "false");
 
       // Visualize loaded map using new architecture
-      const auto &nodes       = database_loader_->getNodes();
-      const auto &links       = database_loader_->getLinks();
-      auto        map_markers = RichVisualization::createMapMarkers(
-                 nodes, links, database_loader_->getCurvedLinks(), "map", this->now(),
-                 0.1, 0.05);
+      const auto &nodes = database_loader_->getNodes();
+      const auto &links = database_loader_->getLinks();
+
+      auto map_markers = RichVisualization::createMapMarkers(
+          nodes, links, database_loader_->getCurvedLinks(), "map", this->now(),
+          0.1, 0.05);
       pub_viz_->publish(map_markers);
 
     } catch (const std::exception &e) {
@@ -153,13 +151,14 @@ private:
     return true;
   }
 
-  rclcpp_action::GoalResponse handle_goal(
-      const rclcpp_action::GoalUUID &uuid,
-      std::shared_ptr<const vrobot_route_follow::action::MoveToPose::Goal>
-          goal) {
+  void executeGoal() {
+    RCLCPP_INFO(this->get_logger(), "Received new goal");
+
+    // Get the current goal from SimpleActionServer
+    const auto goal = action_server_->get_current_goal();
 
     RCLCPP_INFO(this->get_logger(),
-                "Received goal: map=%s, target_node=%lu, target_pose_name=%s, "
+                "Executing goal: map=%s, target_node=%lu, target_pose_name=%s, "
                 "current_pose=(%f,%f,%f)",
                 goal->map_name.c_str(), goal->target_node_id,
                 goal->target_pose_name.c_str(), goal->current_pose.x,
@@ -167,52 +166,33 @@ private:
 
     // Check if follow path action is available
     if (!v_follow_path_client_->wait_for_action_server(
-            std::chrono::seconds(5))) {
+            std::chrono::seconds(1))) {
       RCLCPP_ERROR(this->get_logger(),
                    "Follow path action server is not available");
-      return rclcpp_action::GoalResponse::REJECT;
+      auto result =
+          std::make_shared<vrobot_route_follow::action::MoveToPose::Result>();
+      result->success       = false;
+      result->error_message = "Follow path action server is not available";
+      action_server_->terminate_all(result);
+      return;
     }
 
-    return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+    // Store current goal and start time for later use
+    execution_start_time_ = std::chrono::steady_clock::now();
+
+    // Execute the goal
+    executeGoalInternal();
   }
 
-  rclcpp_action::CancelResponse
-  handle_cancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<
-                    vrobot_route_follow::action::MoveToPose>>
-                    goal_handle) {
+  void executeGoalInternal() {
+    const auto goal = action_server_->get_current_goal();
 
-    RCLCPP_INFO(this->get_logger(), "Received cancel goal");
-
-    // Cancel all goals of follow path client
-    RCLCPP_WARN(this->get_logger(), "Cancel action - follow path will stop");
-
-    return rclcpp_action::CancelResponse::ACCEPT;
-  }
-
-  void handle_accepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<
-                           vrobot_route_follow::action::MoveToPose>>
-                           goal_handle) {
-    execute(goal_handle);
-  }
-
-  void execute(const std::shared_ptr<rclcpp_action::ServerGoalHandle<
-                   vrobot_route_follow::action::MoveToPose>>
-                   goal_handle) {
-
-    const auto goal = goal_handle->get_goal();
-    auto       feedback =
+    auto feedback =
         std::make_shared<vrobot_route_follow::action::MoveToPose::Feedback>();
     auto result =
         std::make_shared<vrobot_route_follow::action::MoveToPose::Result>();
 
-    auto start_time = std::chrono::steady_clock::now();
-
     try {
-      // Step 1: Initialize database if not already done
-      if (!db_client_) {
-        initDatabase();
-      }
-
       // Step 2: Load map data using modular architecture
       RCLCPP_INFO(this->get_logger(), "Loading map data for: %s",
                   goal->map_name.c_str());
@@ -221,14 +201,16 @@ private:
         if (!loadMapData(goal->map_name)) {
           result->success       = false;
           result->error_message = "Cannot load map data";
-          goal_handle->abort(result);
+          action_server_->terminate_all(result);
           return;
         }
       }
 
-      RCLCPP_INFO(this->get_logger(),
-                  "Target pose name: %s, target node id: %lu",
-                  goal->target_pose_name.c_str(), goal->target_node_id);
+      RCLCPP_INFO(
+          this->get_logger(), "Target pose name: %s, target node id: %lu",
+          goal->target_pose_name.c_str() ? goal->target_pose_name.c_str()
+                                         : "not specified",
+          goal->target_node_id);
 
       auto                   target_node_id = goal->target_node_id;
       Mapper<amr_ros2::Node> mapperNodes(db_client_);
@@ -258,7 +240,7 @@ private:
         if (nodes.empty()) {
           result->success       = false;
           result->error_message = "Target node name not found in database";
-          goal_handle->abort(result);
+          action_server_->terminate_all(result);
           return;
         }
         target_node_id = *nodes[0].getId();
@@ -270,7 +252,7 @@ private:
       if (nodes.find(node_id_int32) == nodes.end()) {
         result->success       = false;
         result->error_message = "Target node id not found in loaded map data";
-        goal_handle->abort(result);
+        action_server_->terminate_all(result);
         return;
       }
 
@@ -295,7 +277,7 @@ private:
         result->success = false;
         result->error_message =
             "Error in path planning: " + rich_result.errorMessage;
-        goal_handle->abort(result);
+        action_server_->terminate_all(result);
         return;
       }
 
@@ -311,36 +293,32 @@ private:
             result->success = false;
             result->error_message =
                 "Path validation failed: " + issue.description;
-            goal_handle->abort(result);
+            action_server_->terminate_all(result);
             return;
           }
         }
       }
 
       // Optimize the path
-      rich_result = path_optimizer_->quickOptimize(
-          rich_result, OptimizationObjective::BALANCED);
+      // rich_result = path_optimizer_->quickOptimize(
+      //     rich_result, OptimizationObjective::BALANCED);
 
       RCLCPP_INFO(this->get_logger(),
                   "Path planning successful, distance: %.2f",
                   rich_result.totalDistance);
 
       // Step 4: Convert RichPathResult to nav/vpath and execute
-      executeRichPathResult(goal_handle, rich_result, start_time);
+      executeRichPathResult(rich_result);
     } catch (const std::exception &e) {
       result->success       = false;
       result->error_message = std::string("Exception: ") + e.what();
-      goal_handle->abort(result);
+      action_server_->terminate_all(result);
       RCLCPP_ERROR(this->get_logger(), "Error in execution: %s", e.what());
     }
   }
 
   // New method to execute RichPathResult using modular architecture
-  void executeRichPathResult(
-      const std::shared_ptr<rclcpp_action::ServerGoalHandle<
-          vrobot_route_follow::action::MoveToPose>> &goal_handle,
-      const RichPathResult                          &rich_result,
-      std::chrono::steady_clock::time_point          start_time) {
+  void executeRichPathResult(const RichPathResult &rich_result) {
 
     try {
       // Convert RichPathResult to nav_msgs::Path and vrobot_local_planner::Path
@@ -359,7 +337,7 @@ private:
             std::make_shared<vrobot_route_follow::action::MoveToPose::Result>();
         result->success       = false;
         result->error_message = "Empty VPath generated";
-        goal_handle->abort(result);
+        action_server_->terminate_all(result);
         return;
       }
 
@@ -374,14 +352,14 @@ private:
 
       // Result callback
       send_goal_options.result_callback =
-          [this, goal_handle, rich_result,
-           start_time](const rclcpp_action::ClientGoalHandle<
-                       vrobot_local_planner::action::VFollowPath>::WrappedResult
-                           &follow_result) {
+          [this, rich_result](
+              const rclcpp_action::ClientGoalHandle<
+                  vrobot_local_planner::action::VFollowPath>::WrappedResult
+                  &follow_result) {
             auto end_time = std::chrono::steady_clock::now();
             auto duration =
                 std::chrono::duration_cast<std::chrono::milliseconds>(
-                    end_time - start_time);
+                    end_time - execution_start_time_);
 
             auto result = std::make_shared<
                 vrobot_route_follow::action::MoveToPose::Result>();
@@ -392,7 +370,7 @@ private:
               result->error_message  = "Path execution completed successfully";
               result->total_distance = rich_result.totalDistance;
               result->total_time     = duration.count() / 1000.0;
-              goal_handle->succeed(result);
+              action_server_->terminate_all(result);
 
               RCLCPP_INFO(this->get_logger(),
                           "🎉 Mission completed: %.3f m, %.2f s, algorithm: %s",
@@ -404,7 +382,7 @@ private:
               result->success        = false;
               result->error_message  = "Path execution aborted";
               result->total_distance = rich_result.totalDistance;
-              goal_handle->abort(result);
+              action_server_->terminate_all(result);
               RCLCPP_ERROR(this->get_logger(), "❌ Path execution aborted");
               break;
 
@@ -412,7 +390,7 @@ private:
               result->success        = false;
               result->error_message  = "Path execution canceled";
               result->total_distance = rich_result.totalDistance;
-              goal_handle->canceled(result);
+              action_server_->terminate_all(result);
               RCLCPP_WARN(this->get_logger(), "⚠️ Path execution canceled");
               break;
 
@@ -420,7 +398,7 @@ private:
               result->success        = false;
               result->error_message  = "Path execution failed";
               result->total_distance = rich_result.totalDistance;
-              goal_handle->abort(result);
+              action_server_->terminate_all(result);
               RCLCPP_ERROR(this->get_logger(), "❌ Path execution failed");
               break;
             }
@@ -428,17 +406,16 @@ private:
 
       // Feedback callback
       send_goal_options.feedback_callback =
-          [goal_handle](
-              rclcpp_action::ClientGoalHandle<
-                  vrobot_local_planner::action::VFollowPath>::SharedPtr,
-              const std::shared_ptr<
-                  const vrobot_local_planner::action::VFollowPath::Feedback>
-                  follow_feedback) {
+          [this](rclcpp_action::ClientGoalHandle<
+                     vrobot_local_planner::action::VFollowPath>::SharedPtr,
+                 const std::shared_ptr<
+                     const vrobot_local_planner::action::VFollowPath::Feedback>
+                     follow_feedback) {
             auto feedback = std::make_shared<
                 vrobot_route_follow::action::MoveToPose::Feedback>();
             feedback->distance_remaining = follow_feedback->distance_to_goal;
             feedback->speed              = follow_feedback->speed;
-            goal_handle->publish_feedback(feedback);
+            action_server_->publish_feedback(feedback);
           };
 
       if (!v_follow_path_client_->wait_for_action_server(
@@ -450,7 +427,7 @@ private:
             std::make_shared<vrobot_route_follow::action::MoveToPose::Result>();
         result->success       = false;
         result->error_message = "VFollowPath action server not available";
-        goal_handle->abort(result);
+        action_server_->terminate_all(result);
         return;
       }
 
@@ -474,20 +451,19 @@ private:
       result->success = false;
       result->error_message =
           "Error in path execution: " + std::string(e.what());
-      goal_handle->abort(result);
+      action_server_->terminate_all(result);
     }
   }
 };
 
 int main(int argc, char **argv) {
-  // Initialize ROS2 first
   rclcpp::init(argc, argv);
 
-  auto action_server = std::make_shared<MoveToPoseActionServer>();
-  RCLCPP_INFO(action_server->get_logger(),
-              "Move To Pose Action Server is running...");
-  rclcpp::spin(action_server);
+  auto action_server = std::make_shared<MoveToPoseActionServer>(
+      "host=127.0.0.1 port=5432 dbname=amr_01 user=amr password=1234512345");
 
+  rclcpp::spin(action_server);
   rclcpp::shutdown();
+
   return 0;
 }

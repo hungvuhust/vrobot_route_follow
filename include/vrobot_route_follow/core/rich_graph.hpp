@@ -8,7 +8,8 @@
 #include <vector>
 
 #include <Eigen/Dense>
-#include <drogon/orm/DbClient.h>
+
+#include "vrobot_route_follow/utils/db_client.hpp"
 
 #include "vrobot_route_follow/algorithms/algorithm_interface.hpp"
 #include "vrobot_route_follow/algorithms/rich_link_based_planner.hpp"
@@ -113,12 +114,10 @@ private:
 
 public:
   RichGraph() = default;
-  explicit RichGraph(std::shared_ptr<drogon::orm::DbClient> db_client);
+  explicit RichGraph(const std::string &connection_info);
 
   // Database operations
   bool loadFromDatabase(const std::string &map_name);
-  bool loadFromDatabase(const std::string                     &map_name,
-                        std::shared_ptr<drogon::orm::DbClient> db_client);
   void clear();
 
   // Graph state queries

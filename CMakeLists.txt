@@ -8,8 +8,6 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
-
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
@@ -203,60 +201,12 @@ rosidl_target_interfaces(modular_architecture_lib
 
 
 # ========================================================================
-# PATH PLANNING SERVICE
-# ========================================================================
-
-add_executable(
-  path_planning_service
-  src/path_planning_service.cpp
-  ${MODEL_SRC}
-)
-
-target_include_directories(path_planning_service PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/models
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-target_link_libraries(path_planning_service
-  Drogon::Drogon
-  modular_architecture_lib
-)
-
-ament_target_dependencies(path_planning_service
-  ${THIS_PACKAGE_DEPENDENCIES}
-)
-
-
-
-
-# Test client executable
-add_executable(
-  test_path_planning_client
-  src/test_path_planning_client.cpp
-)
-
-target_include_directories(test_path_planning_client
-  PRIVATE 
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-target_link_libraries(test_path_planning_client
-  modular_architecture_lib
-)
-
-ament_target_dependencies(test_path_planning_client
-  ${THIS_PACKAGE_DEPENDENCIES}
-)
-
-# ========================================================================
 # MOVE TO POSE ACTION SERVER
 # ========================================================================
 
 add_executable(
   move_to_pose_action_server
   src/move_to_pose_action_server.cpp
-  ${MODEL_SRC}
 )
 
 target_include_directories(move_to_pose_action_server PRIVATE
@@ -266,16 +216,10 @@ target_include_directories(move_to_pose_action_server PRIVATE
 )
 
 target_link_libraries(move_to_pose_action_server
-  Drogon::Drogon
+  # Drogon::Drogon
   modular_architecture_lib
 )
-ament_target_dependencies(move_to_pose_action_server
-  ${THIS_PACKAGE_DEPENDENCIES}
-)
 
-rosidl_target_interfaces(move_to_pose_action_server
-  ${PROJECT_NAME} "rosidl_typesupport_cpp"
-)
 
 # Test move to pose client executable
 add_executable(
@@ -330,7 +274,7 @@ install(
 
 # Install executables
 install(
-  TARGETS path_planning_service test_path_planning_client move_to_pose_action_server test_move_to_pose_client
+  TARGETS  move_to_pose_action_server test_move_to_pose_client
   DESTINATION lib/${PROJECT_NAME}
 )
 
