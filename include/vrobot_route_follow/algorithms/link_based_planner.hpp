@@ -24,7 +24,6 @@ public:
   // ========================================================================
   // CORE LINK-BASED ALGORITHMS
   // ========================================================================
-
   /**
    * @brief Advanced path planning with modular link-based approach
    * @param startPose Starting pose
@@ -47,7 +46,6 @@ public:
   // ========================================================================
   // ENHANCED LINK ACCESS
   // ========================================================================
-
   /**
    * @brief Enhanced path planning with link access for distant poses
    * @param startPose Starting pose
@@ -65,7 +63,6 @@ public:
   // ========================================================================
   // SIMPLE LINK ACCESS
   // ========================================================================
-
   /**
    * @brief Simple link access approach: start → closest point on link →
    * destination
@@ -82,7 +79,6 @@ public:
   // ========================================================================
   // LINK FOLLOWING APPROACHES
   // ========================================================================
-
   /**
    * @brief Link following approach where robot follows link topology
    * @param startPose Starting pose
@@ -111,7 +107,6 @@ private:
   // ========================================================================
   // HELPER METHODS
   // ========================================================================
-
   /**
    * @brief Helper method to build path through link
    * @param startPose Starting pose

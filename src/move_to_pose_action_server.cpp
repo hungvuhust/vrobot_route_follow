@@ -43,8 +43,7 @@ class MoveToPoseActionServer : public rclcpp::Node {
 private:
   rclcpp_action::Server<vrobot_route_follow::action::MoveToPose>::SharedPtr
       action_server_;
-  rclcpp_action::Client<vrobot_local_planner::action::FollowPath>::SharedPtr
-      follow_path_client_;
+
   rclcpp_action::Client<vrobot_local_planner::action::VFollowPath>::SharedPtr
       v_follow_path_client_;
 
@@ -79,11 +78,6 @@ public:
 
     vpath_publisher_ = this->create_publisher<vrobot_local_planner::msg::Path>(
         "route_vpath", rclcpp::QoS(10).transient_local().reliable());
-
-    // Create follow path action client
-    follow_path_client_ =
-        rclcpp_action::create_client<vrobot_local_planner::action::FollowPath>(
-            this, "follow_path");
 
     // Create v follow path action client
     v_follow_path_client_ =
