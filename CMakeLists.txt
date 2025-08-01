@@ -22,6 +22,7 @@ set(THIS_PACKAGE_DEPENDENCIES
   rclcpp_action
   rclcpp_components
   std_msgs
+  std_srvs
   sensor_msgs
   geometry_msgs
   nav_msgs
@@ -179,71 +180,9 @@ include_directories(
   ${matplotlib_cpp_INCLUDE_DIRS}
 )
 
-add_executable(
-  test_readdb
-  ${READDBR_SRC}
-  ${MODEL_SRC}
-)
-
-target_include_directories(test_readdb
-  PRIVATE 
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/models
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-target_link_libraries(test_readdb
-  Drogon::Drogon
-  mrpt_graph_pose_lib
-  matplotlib_cpp::matplotlib_cpp
-)
-
-# ========================================================================
-# PATH PLANNING SERVICE
-# ========================================================================
-
-add_executable(
-  path_planning_service
-  src/path_planning_service.cpp
-  ${MODEL_SRC}
-)
-
-target_include_directories(path_planning_service PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/models
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-target_link_libraries(path_planning_service
-  Drogon::Drogon
-  mrpt_graph_pose_lib
-)
-
-ament_target_dependencies(path_planning_service
-  ${THIS_PACKAGE_DEPENDENCIES}
-)
 
 
 
-
-# Test client executable
-add_executable(
-  test_path_planning_client
-  src/test_path_planning_client.cpp
-)
-
-target_include_directories(test_path_planning_client
-  PRIVATE 
-    ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-target_link_libraries(test_path_planning_client
-  mrpt_graph_pose_lib
-)
-
-ament_target_dependencies(test_path_planning_client
-  ${THIS_PACKAGE_DEPENDENCIES}
-)
 
 # ========================================================================
 # MOVE TO POSE ACTION SERVER
@@ -297,6 +236,30 @@ rosidl_target_interfaces(test_move_to_pose_client
   ${PROJECT_NAME} "rosidl_typesupport_cpp"
 )
 
+# Move to pose service server executable
+add_executable(
+  move_to_pose_service_server
+  src/move_to_pose_service_server.cpp
+)
+
+target_include_directories(move_to_pose_service_server
+  PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+target_link_libraries(move_to_pose_service_server
+  mrpt_graph_pose_lib
+)
+
+ament_target_dependencies(move_to_pose_service_server
+  ${THIS_PACKAGE_DEPENDENCIES}
+)
+
+rosidl_target_interfaces(move_to_pose_service_server
+  ${PROJECT_NAME} "rosidl_typesupport_cpp"
+)
+
+
 # ========================================================================
 # INSTALLATION
 # ========================================================================
@@ -327,7 +290,7 @@ install(
 
 # Install executables
 install(
-  TARGETS test_readdb path_planning_service test_path_planning_client move_to_pose_action_server test_move_to_pose_client
+  TARGETS move_to_pose_action_server test_move_to_pose_client move_to_pose_service_server
   DESTINATION lib/${PROJECT_NAME}
 )
 
