@@ -50,7 +50,6 @@ rosidl_generate_interfaces(
 ament_export_dependencies(rosidl_default_runtime)
 
 find_package(Drogon CONFIG REQUIRED)
-find_package(matplotlib_cpp REQUIRED)
 
 # ========================================================================
 # ORGANIZED HEADER STRUCTURE
