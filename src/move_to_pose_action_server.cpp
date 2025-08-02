@@ -212,6 +212,9 @@ private:
     RCLCPP_INFO(this->get_logger(), "Received cancel goal");
 
     // Cancel all goals of follow path client
+    v_follow_path_client_->async_cancel_all_goals();
+
+    // Cancel all goals of follow path client
     RCLCPP_WARN(this->get_logger(), "Cancel action - follow path will stop");
 
     return rclcpp_action::CancelResponse::ACCEPT;
@@ -737,6 +740,19 @@ private:
       state->goal_handle->abort(result);
       return;
     }
+
+    // auto cancel_future = std::async(std::launch::async, [this, state]() {
+    //   while (!state->goal_handle->is_canceling()) {
+    //     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    //     if (state->current_segment == state->path_segments.size() - 1) {
+    //       break;
+    //     }
+    //   }
+
+    //   if (state->goal_handle->is_canceling()) {
+    //     v_follow_path_client_->async_cancel_all_goals();
+    //   }
+    // });
 
     v_follow_path_client_->async_send_goal(follow_goal, send_goal_options);
   }

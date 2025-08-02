@@ -88,10 +88,11 @@ public:
       return;
     }
 
+    is_pose_received_ = false;
+
     while (pose_subscriber_->get_publisher_count() == 0 or !is_pose_received_) {
       RCLCPP_INFO(this->get_logger(), "Chờ publisher pose...");
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
-      rclcpp::spin_some(node_);
     }
 
     auto goal_msg               = MoveToPoseAct::Goal();
